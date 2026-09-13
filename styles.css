@@ -732,7 +732,7 @@ textarea {
   width: 100%;
   height: 100%;
   position: relative;
-  transition: transform 0.3s ease;
+  transition: none;
 }
 
 /* FLIP: rotate the entire board 180deg so it appears from the other side */
