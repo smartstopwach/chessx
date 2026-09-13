@@ -1564,13 +1564,9 @@ function bindEvents() {
   });
 
   $('btnEngineToggle').addEventListener('click', toggleEngine);
-  // Toggle left sidebar (Tools) visibility — also enters setup mode
+  // Toggle left sidebar (Tools) visibility
   $('btnToggleLeftSidebar').addEventListener('click', () => {
     els.layout.classList.toggle('left-sidebar-visible');
-    state.setupMode = true; // entering setup mode when tools shown
-    state.heldPiece = null;
-    state.selectedRackPiece = null;
-    updateSetupHint();
     setTimeout(autoFitBoard, 50);
   });
 
