@@ -27,7 +27,7 @@ const PIECE_FONT = {
 // STATE
 // ============================================
 const state = {
-  game: (typeof Chess !== 'undefined') ? new Chess() : { board: () => Array(8).fill(null).map(()=>Array(8).fill(null)), history: ()=>[], moves: ()=>[], fen: ()=>'', in_check: ()=>false, turn: ()=>'w', move: ()=>null, undo: ()=>null, reset: ()=>null, pgn: ()=>'', load: ()=>null, load_pgn: ()=>null },
+  game: new Chess(),
   history: [],
   historyIndex: -1,
   position: { fen: '' },
