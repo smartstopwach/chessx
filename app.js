@@ -62,7 +62,7 @@ const state = {
   puzzle: null,
   puzzleAnswer: null,
   clock: { wTime: 600, bTime: 600, running: false, activeColor: 'w', interval: null },
-  recording: { mode: false, mediaRecorder: null, chunks: [], stream: null, startTime: 0, timer: null, paused: false, micStream: null, micEnabled: false },
+  recording: { mode: false, mediaRecorder: null, chunks: [], stream: null, startTime: 0, timer: null, paused: false, micStream: null, micEnabled: false, micAnalyser: null, micMeterRaf: null, micMeterFill: null, micAudioCtx: null, webcamStream: null },
   layout: 'board',
   uiHidden: false,
   titleHidden: false,
@@ -1192,11 +1192,10 @@ function switchClockSide() {
 function enterRecordingMode() {
   document.body.classList.add('recording-mode');
   state.recording.mode = true;
-  // Don't set a layout — let CSS default (both sidebars visible) take effect
-  // Just sync the layout-btn active states: none should be active in default
   $$('.layout-btn').forEach(b => b.classList.remove('active'));
   $('recordingBar').classList.remove('hidden');
   startRecTimer();
+  toast('Recording mode active — set up your lesson', 'success');
 }
 
 function exitRecordingMode() {
@@ -1206,6 +1205,9 @@ function exitRecordingMode() {
   state.uiHidden = false;
   $('recordingBar').classList.add('hidden');
   stopRecTimer();
+  // Clean up any active streams
+  if (state.recording.mediaRecorder) stopScreenRecording();
+  hideWebcam();
 }
 
 function startRecTimer() {
@@ -1231,24 +1233,193 @@ async function toggleMic() {
     if (state.recording.micStream) {
       state.recording.micStream.getTracks().forEach(t => t.stop());
     }
+    if (state.recording.micAnalyser) {
+      state.recording.micAnalyser.disconnect();
+      state.recording.micAnalyser = null;
+    }
     state.recording.micEnabled = false;
     $('btnToggleMic').classList.remove('active');
+    if (state.recording.micMeterRaf) {
+      cancelAnimationFrame(state.recording.micMeterRaf);
+      state.recording.micMeterRaf = null;
+    }
+    const fill = $('micMeterFill');
+    if (fill) fill.style.width = '0%';
     toast('Microphone off');
     return;
   }
   try {
-    state.recording.micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    state.recording.micStream = stream;
     state.recording.micEnabled = true;
     $('btnToggleMic').classList.add('active');
     toast('Microphone on', 'success');
+
+    // Audio analyser for level meter
+    try {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const source = audioCtx.createMediaStreamSource(stream);
+      const analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 256;
+      source.connect(analyser);
+      state.recording.micAnalyser = analyser;
+      state.recording.micAudioCtx = audioCtx;
+      state.recording.micMeterFill = $('micMeterFill');
+
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+      const updateMeter = () => {
+        if (!state.recording.micAnalyser) return;
+        analyser.getByteFrequencyData(dataArray);
+        let sum = 0;
+        for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
+        const avg = sum / dataArray.length;
+        const pct = Math.min(100, (avg / 128) * 100);
+        if (state.recording.micMeterFill) {
+          state.recording.micMeterFill.style.width = pct + '%';
+        }
+        state.recording.micMeterRaf = requestAnimationFrame(updateMeter);
+      };
+      updateMeter();
+    } catch (e) {
+      console.warn('Audio analyser failed:', e);
+    }
   } catch (e) {
     toast('Microphone permission denied', 'error');
   }
 }
 
 // ============================================
+// WEBCAM PIP (Recordly-style picture-in-picture)
+// ============================================
+async function toggleWebcam() {
+  const pip = $('webcamPip');
+  if (!pip.classList.contains('hidden')) {
+    hideWebcam();
+    return;
+  }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { width: { ideal: 640 }, height: { ideal: 480 } },
+      audio: false
+    });
+    state.recording.webcamStream = stream;
+    $('webcamVideo').srcObject = stream;
+    pip.classList.remove('hidden');
+    pip.classList.add('size-md');
+    $('btnToggleWebcam').classList.add('active');
+    toast('Webcam on', 'success');
+    initWebcamDrag();
+  } catch (e) {
+    toast('Webcam permission denied', 'error');
+  }
+}
+
+function hideWebcam() {
+  if (state.recording.webcamStream) {
+    state.recording.webcamStream.getTracks().forEach(t => t.stop());
+    state.recording.webcamStream = null;
+  }
+  $('webcamVideo').srcObject = null;
+  $('webcamPip').classList.add('hidden');
+  $('btnToggleWebcam').classList.remove('active');
+}
+
+function cycleWebcamSize() {
+  const pip = $('webcamPip');
+  const sizes = ['size-sm', 'size-md', 'size-lg', 'size-xl'];
+  const current = sizes.find(s => pip.classList.contains(s)) || 'size-md';
+  const idx = sizes.indexOf(current);
+  const next = sizes[(idx + 1) % sizes.length];
+  sizes.forEach(s => pip.classList.remove(s));
+  pip.classList.add(next);
+}
+
+function toggleWebcamFullscreen() {
+  const pip = $('webcamPip');
+  if (document.fullscreenElement === pip) {
+    document.exitFullscreen();
+  } else if (pip.requestFullscreen) {
+    pip.requestFullscreen();
+  }
+}
+
+function initWebcamDrag() {
+  const pip = $('webcamPip');
+  const handle = $('webcamHandle');
+  let isDragging = false;
+  let startX, startY, startLeft, startBottom;
+
+  const onStart = (e) => {
+    if (e.target.closest('.webcam-btn')) return;
+    isDragging = true;
+    const pt = e.touches ? e.touches[0] : e;
+    startX = pt.clientX;
+    startY = pt.clientY;
+    const rect = pip.getBoundingClientRect();
+    startLeft = rect.left;
+    startBottom = window.innerHeight - rect.bottom;
+    e.preventDefault();
+  };
+
+  const onMove = (e) => {
+    if (!isDragging) return;
+    const pt = e.touches ? e.touches[0] : e;
+    const dx = pt.clientX - startX;
+    const dy = pt.clientY - startY;
+    pip.style.left = Math.max(0, Math.min(window.innerWidth - 100, startLeft + dx)) + 'px';
+    pip.style.right = 'auto';
+    pip.style.bottom = Math.max(0, Math.min(window.innerHeight - 100, startBottom - dy)) + 'px';
+    pip.style.top = 'auto';
+  };
+
+  const onEnd = () => { isDragging = false; };
+
+  handle.addEventListener('mousedown', onStart);
+  handle.addEventListener('touchstart', onStart);
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('touchmove', onMove);
+  document.addEventListener('mouseup', onEnd);
+  document.addEventListener('touchend', onEnd);
+}
+
+// ============================================
+// COUNTDOWN OVERLAY (Recordly-style 3-2-1)
+// ============================================
+function runCountdown(callback) {
+  const overlay = $('countdownOverlay');
+  const num = $('countdownNumber');
+  overlay.classList.remove('hidden');
+
+  let count = 3;
+  num.textContent = count;
+  num.style.animation = 'none';
+  void num.offsetWidth;
+  num.style.animation = '';
+
+  const tick = setInterval(() => {
+    count--;
+    if (count > 0) {
+      num.textContent = count;
+      num.style.animation = 'none';
+      void num.offsetWidth;
+      num.style.animation = '';
+    } else {
+      clearInterval(tick);
+      overlay.classList.add('hidden');
+      callback();
+    }
+  }, 1000);
+}
+
+// ============================================
 // SCREEN RECORDING (Browser MediaRecorder)
 // ============================================
+async function startScreenRecordingWithCountdown() {
+  runCountdown(async () => {
+    await startScreenRecording();
+  });
+}
+
 async function startScreenRecording() {
   try {
     const stream = await navigator.mediaDevices.getDisplayMedia({
@@ -1294,6 +1465,7 @@ async function startScreenRecording() {
     state.recording.startTime = Date.now();
     $('recPreviewBar').classList.remove('hidden');
     $('recStatusText').textContent = 'Recording screen';
+    toast('Recording started!', 'success');
 
     const liveTimer = setInterval(() => {
       if (!state.recording.mediaRecorder || state.recording.mediaRecorder.state === 'inactive') {
@@ -1410,6 +1582,11 @@ function bindEvents() {
   $('btnExitRecMode').addEventListener('click', exitRecordingMode);
   $('btnToggleUi').addEventListener('click', toggleUi);
   $('btnToggleMic').addEventListener('click', toggleMic);
+  $('btnToggleWebcam').addEventListener('click', toggleWebcam);
+  $('btnStartScreenRec').addEventListener('click', startScreenRecordingWithCountdown);
+  $('btnWebcamHide').addEventListener('click', hideWebcam);
+  $('btnWebcamResize').addEventListener('click', cycleWebcamSize);
+  $('btnWebcamFullscreen').addEventListener('click', toggleWebcamFullscreen);
 
   $$('.tool-btn').forEach(b => b.addEventListener('click', () => setTool(b.dataset.tool)));
   $$('.color-dot').forEach(b => b.addEventListener('click', () => {

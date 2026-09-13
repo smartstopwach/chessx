@@ -1331,8 +1331,145 @@ body.recording-mode.ui-hidden .recording-bar { opacity: 0; pointer-events: none;
 body.recording-mode.ui-hidden:hover .recording-bar { opacity: 1; }
 
 /* ============================================
-   TOAST
+   COUNTDOWN OVERLAY (Recordly-style 3-2-1)
    ============================================ */
+.countdown-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 9998;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+}
+
+.countdown-number {
+  font-family: 'Playfair Display', serif;
+  font-size: 200px;
+  font-weight: 700;
+  color: var(--accent);
+  text-shadow: 0 0 60px var(--accent-glow), 0 0 120px var(--accent-glow);
+  animation: countdown-pulse 1s ease-out;
+  line-height: 1;
+}
+
+.countdown-label {
+  font-size: 18px;
+  color: var(--text-secondary);
+  margin-top: 24px;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  font-weight: 600;
+}
+
+@keyframes countdown-pulse {
+  0% { transform: scale(0.5); opacity: 0; }
+  50% { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* ============================================
+   WEBCAM PIP (Picture-in-Picture)
+   ============================================ */
+.webcam-pip {
+  position: fixed;
+  bottom: 90px;
+  right: 20px;
+  width: 200px;
+  height: 150px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 2px solid var(--accent);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 24px var(--accent-glow);
+  z-index: 50;
+  background: var(--bg-tertiary);
+  cursor: move;
+  user-select: none;
+  transition: width 0.2s, height 0.2s;
+}
+
+.webcam-pip.size-sm { width: 160px; height: 120px; }
+.webcam-pip.size-md { width: 200px; height: 150px; }
+.webcam-pip.size-lg { width: 280px; height: 210px; }
+.webcam-pip.size-xl { width: 380px; height: 285px; }
+
+.webcam-pip video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1); /* Mirror like a real webcam */
+  display: block;
+}
+
+.webcam-controls {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.webcam-pip:hover .webcam-controls { opacity: 1; }
+
+.webcam-btn {
+  width: 24px;
+  height: 24px;
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+  padding: 0;
+}
+
+.webcam-btn:hover {
+  background: var(--accent);
+  color: var(--bg-primary);
+  border-color: var(--accent);
+}
+
+.webcam-handle {
+  position: absolute;
+  bottom: 4px;
+  left: 4px;
+  color: white;
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* ============================================
+   MIC METER (audio level indicator)
+   ============================================ */
+.mic-meter {
+  display: inline-block;
+  width: 24px;
+  height: 8px;
+  background: var(--bg-tertiary);
+  border-radius: 2px;
+  margin-left: 4px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.mic-meter-fill {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--success), var(--warning), var(--danger));
+  width: 0%;
+  transition: width 0.1s ease-out;
+}
+
+.rec-btn.active .mic-meter-fill {
+  background: linear-gradient(90deg, var(--success), var(--success));
+}
 .toast {
   position: fixed;
   bottom: 24px;
