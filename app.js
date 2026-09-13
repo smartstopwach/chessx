@@ -160,33 +160,18 @@ function renderBoard() {
       sq.dataset.row = r;
       sq.dataset.col = c;
 
-      // Coordinates
-      if (state.flipped) {
-        if (c === 7) {
-          const rank = document.createElement('div');
-          rank.className = 'coord rank';
-          rank.textContent = 8 - r;
-          sq.appendChild(rank);
-        }
-        if (r === 7) {
-          const file = document.createElement('div');
-          file.className = 'coord file';
-          file.textContent = String.fromCharCode(97 + c);
-          sq.appendChild(file);
-        }
-      } else {
-        if (c === 0) {
-          const rank = document.createElement('div');
-          rank.className = 'coord rank';
-          rank.textContent = 8 - r;
-          sq.appendChild(rank);
-        }
-        if (r === 7) {
-          const file = document.createElement('div');
-          file.className = 'coord file';
-          file.textContent = String.fromCharCode(97 + c);
-          sq.appendChild(file);
-        }
+      // Coordinates (CSS rotates board when flipped, so use same positions)
+      if (c === 0) {
+        const rank = document.createElement('div');
+        rank.className = 'coord rank';
+        rank.textContent = 8 - r;
+        sq.appendChild(rank);
+      }
+      if (r === 7) {
+        const file = document.createElement('div');
+        file.className = 'coord file';
+        file.textContent = String.fromCharCode(97 + c);
+        sq.appendChild(file);
       }
 
       // Piece

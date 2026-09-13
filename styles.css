@@ -731,6 +731,18 @@ textarea {
   width: 100%;
   height: 100%;
   position: relative;
+  transition: transform 0.3s ease;
+}
+
+/* FLIP: rotate the entire board 180deg so it appears from the other side */
+body[data-flipped="true"] .board {
+  transform: rotate(180deg);
+}
+
+/* Counter-rotate pieces and labels so they stay upright */
+body[data-flipped="true"] .board .piece,
+body[data-flipped="true"] .board .coord {
+  transform: rotate(180deg);
 }
 
 .square {
