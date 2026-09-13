@@ -669,6 +669,7 @@ function getFenAtMove(idx) {
 
 function nextMove() {
   const total = state.game.history().length;
+  // Move forward through history (after undo/prev). historyIndex -1 → total-1.
   if (state.historyIndex < total - 1) {
     state.historyIndex++;
     state.game.load(getFenAtMove(state.historyIndex));
@@ -684,6 +685,7 @@ function prevMove() {
     state.selectedSquare = null;
     renderAll();
   } else if (state.historyIndex === 0) {
+    // Go back to before any moves
     state.historyIndex = -1;
     state.game.load('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1');
     state.selectedSquare = null;
@@ -694,10 +696,14 @@ function prevMove() {
 function deleteMove() {
   const total = state.game.history().length;
   if (total === 0) return;
+  // Actually remove the move from the game
+  const lastMove = state.game.history({ verbose: true })[total - 1];
   state.game.undo();
   state.historyIndex = state.game.history().length - 1;
+  state.selectedSquare = null;
   renderAll();
   requestEngineEval();
+  toast(`Deleted: ${lastMove.san}`, 'success');
 }
 
 // ============================================
@@ -1359,7 +1365,7 @@ function bindEvents() {
 
   $('btnFlip').addEventListener('click', flipBoard);
   $('btnReset').addEventListener('click', resetBoard);
-  $('btnUndo').addEventListener('click', () => { state.game.undo(); state.historyIndex = state.game.history().length - 1; renderAll(); });
+  $('btnUndo').addEventListener('click', () => { prevMove(); });
   $('btnFullscreen').addEventListener('click', () => {
     if (!document.fullscreenElement) document.documentElement.requestFullscreen();
     else document.exitFullscreen();
