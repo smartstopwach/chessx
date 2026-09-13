@@ -411,6 +411,85 @@
       </div>
     </div>
 
+    <!-- Library / Chapters (advanced puzzle authoring) -->
+    <div class="panel" id="libraryPanel">
+      <div class="panel-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        Library / Chapters
+        <button class="btn-icon-mini" id="btnNewChapter" title="New Chapter"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></button>
+      </div>
+      <div class="library-search">
+        <input type="text" id="librarySearch" placeholder="Search puzzles..." />
+      </div>
+      <div class="library-tree" id="libraryTree">
+        <!-- Filled by JS: chapters and puzzles -->
+      </div>
+      <div class="row">
+        <button class="btn-ghost-full" id="btnImportLibrary">Import</button>
+        <button class="btn-ghost-full" id="btnExportLibrary">Export</button>
+      </div>
+      <input type="file" id="libraryFileInput" accept=".json" style="display:none" />
+    </div>
+
+    <!-- Puzzle Editor (current puzzle being authored) -->
+    <div class="panel" id="puzzleEditorPanel">
+      <div class="panel-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+        Puzzle Editor
+      </div>
+      <div class="editor-row">
+        <label class="small-label">Title</label>
+        <input type="text" id="puzzleTitle" placeholder="e.g. Fork the king and queen" />
+      </div>
+      <div class="editor-row">
+        <label class="small-label">Description / Hint</label>
+        <textarea id="puzzleDescription" rows="2" placeholder="Hint for the student..."></textarea>
+      </div>
+      <div class="editor-row">
+        <label class="small-label">Solution (moves, SAN)</label>
+        <input type="text" id="puzzleSolution" placeholder="e.g. Nxe5, Qh5+, Rd1" />
+      </div>
+      <div class="editor-row">
+        <label class="small-label">Difficulty</label>
+        <select id="puzzleDifficulty">
+          <option value="1">★ Beginner</option>
+          <option value="2">★★ Easy</option>
+          <option value="3" selected>★★★ Medium</option>
+          <option value="4">★★★★ Hard</option>
+          <option value="5">★★★★★ Expert</option>
+        </select>
+      </div>
+      <div class="editor-row">
+        <label class="small-label">Tags</label>
+        <input type="text" id="puzzleTags" placeholder="comma,separated,tags" />
+      </div>
+      <div class="editor-row">
+        <label class="small-label">Position (FEN)</label>
+        <div class="row">
+          <button class="btn-mini" id="btnCapturePosition" title="Capture current board position">📸 Capture</button>
+          <button class="btn-mini" id="btnLoadPosition" title="Load this FEN to board">⬇ Load</button>
+        </div>
+        <textarea id="puzzleFen" rows="2" placeholder="FEN string..."></textarea>
+      </div>
+      <div class="editor-row chapter-select-row">
+        <label class="small-label">Chapter</label>
+        <select id="puzzleChapterSelect">
+          <!-- Filled by JS -->
+        </select>
+      </div>
+      <div class="row">
+        <button class="btn-primary-full" id="btnSavePuzzle">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          SAVE PUZZLE
+        </button>
+        <button class="btn-ghost-full" id="btnNewPuzzle">+ New</button>
+      </div>
+      <div class="row">
+        <button class="btn-ghost-full" id="btnTestPuzzle" title="Try the puzzle from student perspective">▶ Test as Student</button>
+        <button class="btn-ghost-full" id="btnDeletePuzzle" title="Delete this puzzle">🗑 Delete</button>
+      </div>
+    </div>
+
     <!-- Puzzle Mode -->
     <div class="panel" id="puzzlePanel">
       <div class="panel-title">

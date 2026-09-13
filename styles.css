@@ -1419,3 +1419,207 @@ body[data-flipped="true"] .board .coord {
 .position-editor::-webkit-scrollbar { width: 6px; }
 .position-editor::-webkit-scrollbar-track { background: transparent; }
 .position-editor::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+
+/* ============================================
+   LIBRARY / CHAPTERS (advanced puzzle authoring)
+   ============================================ */
+.library-search {
+  margin-bottom: 8px;
+}
+.library-search input {
+  width: 100%;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  padding: 5px 8px;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 12px;
+  outline: none;
+}
+.library-search input:focus {
+  border-color: var(--accent);
+}
+
+.library-tree {
+  max-height: 220px;
+  overflow-y: auto;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 4px;
+  margin-bottom: 8px;
+}
+.library-tree::-webkit-scrollbar { width: 6px; }
+.library-tree::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+.library-empty {
+  padding: 16px 8px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.library-chapter {
+  margin-bottom: 2px;
+}
+.library-chapter-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--text-primary);
+  user-select: none;
+  transition: var(--transition);
+}
+.library-chapter-header:hover {
+  background: var(--bg-elevated);
+}
+.library-chapter-header.active {
+  background: rgba(232, 197, 71, 0.15);
+  color: var(--accent);
+}
+.chapter-caret {
+  display: inline-block;
+  width: 12px;
+  font-size: 9px;
+  transition: transform 0.2s;
+  color: var(--text-muted);
+}
+.library-chapter-header.expanded .chapter-caret {
+  transform: rotate(90deg);
+}
+.chapter-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.chapter-count {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-weight: normal;
+  padding: 2px 6px;
+  background: var(--bg-primary);
+  border-radius: 8px;
+}
+.chapter-actions {
+  display: none;
+  gap: 2px;
+}
+.library-chapter-header:hover .chapter-actions {
+  display: flex;
+}
+.chapter-action {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 11px;
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+.chapter-action:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.library-puzzles {
+  padding-left: 16px;
+  display: none;
+}
+.library-chapter-header.expanded + .library-puzzles {
+  display: block;
+}
+.library-puzzle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text-secondary);
+  transition: var(--transition);
+}
+.library-puzzle:hover {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+.library-puzzle.active {
+  background: var(--accent);
+  color: var(--bg-primary);
+}
+.puzzle-difficulty {
+  font-size: 9px;
+  letter-spacing: 0.5px;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.library-puzzle.active .puzzle-difficulty {
+  color: var(--bg-primary);
+}
+.puzzle-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.puzzle-actions {
+  display: none;
+}
+.library-puzzle:hover .puzzle-actions {
+  display: flex;
+}
+.puzzle-action {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 10px;
+  padding: 0 3px;
+}
+.puzzle-action:hover {
+  color: var(--text-primary);
+}
+
+/* ============================================
+   PUZZLE EDITOR
+   ============================================ */
+.editor-row {
+  margin-bottom: 8px;
+}
+.editor-row .small-label {
+  display: block;
+  margin-bottom: 4px;
+}
+.editor-row input[type="text"],
+.editor-row select,
+.editor-row textarea {
+  width: 100%;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  padding: 5px 8px;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 12px;
+  outline: none;
+  resize: vertical;
+}
+.editor-row input[type="text"]:focus,
+.editor-row select:focus,
+.editor-row textarea:focus {
+  border-color: var(--accent);
+}
+.editor-row .row {
+  margin-bottom: 4px;
+}
+.chapter-select-row select {
+  width: 100%;
+}

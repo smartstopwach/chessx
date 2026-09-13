@@ -1140,6 +1140,414 @@ function setLayout(layout) {
 }
 
 // ============================================
+// LIBRARY / CHAPTERS / PUZZLE AUTHORING
+// ============================================
+const LIBRARY_KEY = 'chessx-library-v1';
+
+function getLibrary() {
+  try {
+    const raw = localStorage.getItem(LIBRARY_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (e) {}
+  // Default: one welcome chapter with one example puzzle
+  return {
+    chapters: [
+      {
+        id: 'welcome-' + Date.now(),
+        name: 'My First Chapter',
+        expanded: true,
+        puzzles: [
+          {
+            id: 'puzzle-' + Date.now(),
+            title: 'Mate in 2 (Example)',
+            description: 'White to move. Find the forcing sequence.',
+            solution: 'Qh5+, g6, Qxg6#',
+            difficulty: 2,
+            tags: 'mate, opening',
+            fen: 'rnbqkbnr/pppp1ppp/8/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 0 2',
+            chapterId: null,
+            createdAt: Date.now(),
+          }
+        ]
+      }
+    ],
+    activeChapterId: null,
+    activePuzzleId: null,
+  };
+}
+
+function saveLibrary(lib) {
+  try {
+    localStorage.setItem(LIBRARY_KEY, JSON.stringify(lib));
+  } catch (e) {
+    toast('Could not save library (storage full?)', 'error');
+  }
+}
+
+function getActiveChapter() {
+  const lib = getLibrary();
+  return lib.chapters.find(c => c.id === lib.activeChapterId);
+}
+function getActivePuzzle() {
+  const lib = getLibrary();
+  const chap = getActiveChapter();
+  if (!chap) return null;
+  return chap.puzzles.find(p => p.id === lib.activePuzzleId);
+}
+
+function renderLibrary(filter = '') {
+  const tree = $('libraryTree');
+  if (!tree) return;
+  const lib = getLibrary();
+  const f = filter.toLowerCase().trim();
+  if (!lib.chapters.length) {
+    tree.innerHTML = '<div class="library-empty">No chapters yet. Click + to create one.</div>';
+    return;
+  }
+  let html = '';
+  for (const chap of lib.chapters) {
+    // Filter puzzles by search
+    const puzzles = chap.puzzles.filter(p => {
+      if (!f) return true;
+      return (p.title || '').toLowerCase().includes(f)
+        || (p.description || '').toLowerCase().includes(f)
+        || (p.tags || '').toLowerCase().includes(f)
+        || (p.solution || '').toLowerCase().includes(f);
+    });
+    const isExpanded = chap.expanded !== false;
+    const isActive = chap.id === lib.activeChapterId;
+    const puzzleCount = chap.puzzles.length;
+    const stars = (n) => '★'.repeat(n) + '☆'.repeat(5 - n);
+
+    html += `<div class="library-chapter" data-chapter-id="${chap.id}">
+      <div class="library-chapter-header ${isExpanded ? 'expanded' : ''} ${isActive ? 'active' : ''}" data-action="toggle-chapter" data-chapter-id="${chap.id}">
+        <span class="chapter-caret">▶</span>
+        <span class="chapter-name" title="${escapeHtml(chap.name)}">${escapeHtml(chap.name)}</span>
+        <span class="chapter-count">${puzzleCount}</span>
+        <div class="chapter-actions">
+          <button class="chapter-action" data-action="add-puzzle" data-chapter-id="${chap.id}" title="Add puzzle here">+</button>
+          <button class="chapter-action" data-action="rename-chapter" data-chapter-id="${chap.id}" title="Rename">✎</button>
+          <button class="chapter-action" data-action="delete-chapter" data-chapter-id="${chap.id}" title="Delete">✕</button>
+        </div>
+      </div>
+      <div class="library-puzzles">`;
+
+    for (const puz of puzzles) {
+      const isActivePuz = puz.id === lib.activePuzzleId;
+      html += `<div class="library-puzzle ${isActivePuz ? 'active' : ''}" data-action="select-puzzle" data-puzzle-id="${puz.id}" data-chapter-id="${chap.id}">
+        <span class="puzzle-difficulty" title="Difficulty ${puz.difficulty}/5">${stars(puz.difficulty || 3)}</span>
+        <span class="puzzle-name" title="${escapeHtml(puz.title || 'Untitled')}">${escapeHtml(puz.title || 'Untitled')}</span>
+        <div class="puzzle-actions">
+          <button class="puzzle-action" data-action="delete-puzzle" data-puzzle-id="${puz.id}" data-chapter-id="${chap.id}" title="Delete">✕</button>
+        </div>
+      </div>`;
+    }
+
+    html += '</div></div>';
+  }
+  tree.innerHTML = html;
+
+  // Wire up event delegation
+  tree.onclick = (e) => {
+    const action = e.target.closest('[data-action]')?.dataset?.action;
+    if (!action) return;
+    const el = e.target.closest('[data-action]');
+    const chapterId = el.dataset.chapterId;
+    const puzzleId = el.dataset.puzzleId;
+    handleLibraryAction(action, chapterId, puzzleId);
+  };
+}
+
+function escapeHtml(s) {
+  return (s || '').replace(/[&<>"']/g, ch => ({
+    '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+  })[ch]);
+}
+
+function handleLibraryAction(action, chapterId, puzzleId) {
+  const lib = getLibrary();
+  if (action === 'toggle-chapter') {
+    const chap = lib.chapters.find(c => c.id === chapterId);
+    if (chap) {
+      chap.expanded = !(chap.expanded !== false);
+      lib.activeChapterId = chapterId;
+      saveLibrary(lib);
+      renderLibrary($('librarySearch')?.value || '');
+    }
+  } else if (action === 'select-puzzle') {
+    lib.activeChapterId = chapterId;
+    lib.activePuzzleId = puzzleId;
+    saveLibrary(lib);
+    renderLibrary($('librarySearch')?.value || '');
+    loadPuzzleToEditor(puzzleId);
+  } else if (action === 'add-puzzle') {
+    const newPuzzle = {
+      id: 'puzzle-' + Date.now(),
+      title: 'New Puzzle',
+      description: '',
+      solution: '',
+      difficulty: 3,
+      tags: '',
+      fen: state.game.fen(),
+      chapterId,
+      createdAt: Date.now(),
+    };
+    const chap = lib.chapters.find(c => c.id === chapterId);
+    if (chap) {
+      chap.puzzles.push(newPuzzle);
+      lib.activeChapterId = chapterId;
+      lib.activePuzzleId = newPuzzle.id;
+      chap.expanded = true;
+      saveLibrary(lib);
+      renderLibrary($('librarySearch')?.value || '');
+      loadPuzzleToEditor(newPuzzle.id);
+      toast('New puzzle added — set its position and save');
+    }
+  } else if (action === 'rename-chapter') {
+    const chap = lib.chapters.find(c => c.id === chapterId);
+    if (chap) {
+      const newName = prompt('Rename chapter:', chap.name);
+      if (newName && newName.trim()) {
+        chap.name = newName.trim();
+        saveLibrary(lib);
+        renderLibrary($('librarySearch')?.value || '');
+      }
+    }
+  } else if (action === 'delete-chapter') {
+    const chap = lib.chapters.find(c => c.id === chapterId);
+    if (!chap) return;
+    if (confirm(`Delete chapter "${chap.name}" and all its ${chap.puzzles.length} puzzle(s)?`)) {
+      lib.chapters = lib.chapters.filter(c => c.id !== chapterId);
+      if (lib.activeChapterId === chapterId) lib.activeChapterId = null;
+      saveLibrary(lib);
+      renderLibrary($('librarySearch')?.value || '');
+      toast('Chapter deleted', 'success');
+    }
+  } else if (action === 'delete-puzzle') {
+    const chap = lib.chapters.find(c => c.id === chapterId);
+    if (!chap) return;
+    const puz = chap.puzzles.find(p => p.id === puzzleId);
+    if (!puz) return;
+    if (confirm(`Delete puzzle "${puz.title}"?`)) {
+      chap.puzzles = chap.puzzles.filter(p => p.id !== puzzleId);
+      if (lib.activePuzzleId === puzzleId) lib.activePuzzleId = null;
+      saveLibrary(lib);
+      renderLibrary($('librarySearch')?.value || '');
+      toast('Puzzle deleted', 'success');
+    }
+  }
+}
+
+function renderChapterSelect() {
+  const sel = $('puzzleChapterSelect');
+  if (!sel) return;
+  const lib = getLibrary();
+  let html = '<option value="">— Uncategorized —</option>';
+  for (const chap of lib.chapters) {
+    html += `<option value="${chap.id}">${escapeHtml(chap.name)}</option>`;
+  }
+  sel.innerHTML = html;
+}
+
+function loadPuzzleToEditor(puzzleId) {
+  const lib = getLibrary();
+  let puzzle = null;
+  let chapterId = null;
+  for (const chap of lib.chapters) {
+    const p = chap.puzzles.find(p => p.id === puzzleId);
+    if (p) { puzzle = p; chapterId = chap.id; break; }
+  }
+  if (!puzzle) {
+    // Clear form
+    $('puzzleTitle').value = '';
+    $('puzzleDescription').value = '';
+    $('puzzleSolution').value = '';
+    $('puzzleDifficulty').value = '3';
+    $('puzzleTags').value = '';
+    $('puzzleFen').value = '';
+    $('puzzleChapterSelect').value = '';
+    return;
+  }
+  $('puzzleTitle').value = puzzle.title || '';
+  $('puzzleDescription').value = puzzle.description || '';
+  $('puzzleSolution').value = puzzle.solution || '';
+  $('puzzleDifficulty').value = String(puzzle.difficulty || 3);
+  $('puzzleTags').value = puzzle.tags || '';
+  $('puzzleFen').value = puzzle.fen || '';
+  $('puzzleChapterSelect').value = chapterId;
+  toast(`Loaded puzzle: ${puzzle.title}`);
+}
+
+function saveCurrentPuzzle() {
+  const lib = getLibrary();
+  let puzzle = null;
+  let chap = null;
+  if (lib.activePuzzleId) {
+    for (const c of lib.chapters) {
+      const p = c.puzzles.find(x => x.id === lib.activePuzzleId);
+      if (p) { puzzle = p; chap = c; break; }
+    }
+  }
+  const title = $('puzzleTitle').value.trim();
+  if (!title) { toast('Please enter a title', 'error'); return; }
+  const description = $('puzzleDescription').value.trim();
+  const solution = $('puzzleSolution').value.trim();
+  const difficulty = parseInt($('puzzleDifficulty').value);
+  const tags = $('puzzleTags').value.trim();
+  const fen = $('puzzleFen').value.trim() || state.game.fen();
+  const newChapterId = $('puzzleChapterSelect').value;
+
+  if (!puzzle) {
+    // Create new puzzle
+    const targetChapId = newChapterId || (lib.chapters[0]?.id);
+    if (!targetChapId) {
+      // Auto-create a chapter
+      const newChap = { id: 'chapter-' + Date.now(), name: 'Chapter 1', expanded: true, puzzles: [] };
+      lib.chapters.push(newChap);
+    }
+    const tid = newChapterId || lib.chapters[0].id;
+    const target = lib.chapters.find(c => c.id === tid);
+    puzzle = {
+      id: 'puzzle-' + Date.now(),
+      title, description, solution, difficulty, tags, fen,
+      chapterId: tid, createdAt: Date.now(),
+    };
+    target.puzzles.push(puzzle);
+    lib.activeChapterId = tid;
+    lib.activePuzzleId = puzzle.id;
+  } else {
+    // Update existing
+    puzzle.title = title;
+    puzzle.description = description;
+    puzzle.solution = solution;
+    puzzle.difficulty = difficulty;
+    puzzle.tags = tags;
+    puzzle.fen = fen;
+
+    // Move to new chapter if changed
+    if (newChapterId && chap.id !== newChapterId) {
+      chap.puzzles = chap.puzzles.filter(p => p.id !== puzzle.id);
+      const newChap = lib.chapters.find(c => c.id === newChapterId);
+      if (newChap) {
+        newChap.puzzles.push(puzzle);
+        chap = newChap;
+        lib.activeChapterId = newChap.id;
+      }
+    }
+    puzzle.chapterId = chap.id;
+  }
+
+  saveLibrary(lib);
+  renderLibrary($('librarySearch')?.value || '');
+  renderChapterSelect();
+  toast('Puzzle saved!', 'success');
+}
+
+function captureCurrentPosition() {
+  $('puzzleFen').value = state.game.fen();
+  toast('Position captured', 'success');
+}
+
+function loadFENToBoard(fen) {
+  if (!fen) return;
+  try {
+    state.game.load(fen);
+    state.history = [];
+    state.historyIndex = -1;
+    renderAll();
+    toast('Position loaded to board', 'success');
+  } catch (e) {
+    toast('Invalid FEN', 'error');
+  }
+}
+
+function newPuzzle() {
+  // Clear the form for a fresh puzzle
+  $('puzzleTitle').value = '';
+  $('puzzleDescription').value = '';
+  $('puzzleSolution').value = '';
+  $('puzzleDifficulty').value = '3';
+  $('puzzleTags').value = '';
+  $('puzzleFen').value = state.game.fen();
+  const lib = getLibrary();
+  lib.activePuzzleId = null;
+  saveLibrary(lib);
+  renderLibrary($('librarySearch')?.value || '');
+  toast('New puzzle — fill in details and Save');
+}
+
+function deleteCurrentPuzzle() {
+  const lib = getLibrary();
+  if (!lib.activePuzzleId) { toast('No puzzle selected', 'error'); return; }
+  const puz = getActivePuzzle();
+  if (!confirm(`Delete puzzle "${puz.title}"?`)) return;
+  for (const c of lib.chapters) {
+    const idx = c.puzzles.findIndex(p => p.id === lib.activePuzzleId);
+    if (idx >= 0) { c.puzzles.splice(idx, 1); break; }
+  }
+  lib.activePuzzleId = null;
+  saveLibrary(lib);
+  renderLibrary($('librarySearch')?.value || '');
+  loadPuzzleToEditor(null);
+  toast('Puzzle deleted', 'success');
+}
+
+function testPuzzleAsStudent() {
+  const lib = getLibrary();
+  const puz = getActivePuzzle();
+  if (!puz) { toast('Select a puzzle first', 'error'); return; }
+  if (!puz.fen) { toast('No position set', 'error'); return; }
+  state.game.load(puz.fen);
+  state.history = [];
+  state.historyIndex = -1;
+  state.puzzle = {
+    title: puz.title,
+    question: puz.description || 'Find the solution',
+    solution: puz.solution || '',
+    fen: puz.fen,
+  };
+  renderAll();
+  // Show puzzle overlay
+  const overlay = $('puzzleOverlay');
+  const question = $('puzzleQuestion');
+  if (overlay && question) {
+    question.textContent = puz.description || 'Find the solution';
+    overlay.classList.remove('hidden');
+  }
+  toast(`Testing puzzle: ${puz.title} — try to solve it!`);
+}
+
+function exportLibrary() {
+  const lib = getLibrary();
+  const json = JSON.stringify(lib, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `chessx-library-${new Date().toISOString().split('T')[0]}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Library exported', 'success');
+}
+
+function importLibrary(file) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const lib = JSON.parse(e.target.result);
+      if (!lib.chapters || !Array.isArray(lib.chapters)) throw new Error('Invalid format');
+      saveLibrary(lib);
+      renderLibrary($('librarySearch')?.value || '');
+      renderChapterSelect();
+      toast(`Imported ${lib.chapters.length} chapter(s)`, 'success');
+    } catch (err) {
+      toast('Invalid library file', 'error');
+    }
+  };
+  reader.readAsText(file);
+}
+
+// ============================================
 // ENGINE (STOCKFISH)
 // ============================================
 function initEngine() {
@@ -1660,9 +2068,39 @@ function doInit() {
 
   // Then do the rest independently
   safeCall('initPieceRack', initPieceRack);
+  renderLibrary();
+  renderChapterSelect();
+  loadPuzzleToEditor(null);
   pushSetupHistory(); // initial state
   updatePieceCount();
   updateSetupHint();
+  // Library / Puzzle editor event listeners
+  $('librarySearch').addEventListener('input', (e) => renderLibrary(e.target.value));
+  $('btnNewChapter').addEventListener('click', () => {
+    const name = prompt('Chapter name:', 'New Chapter');
+    if (!name || !name.trim()) return;
+    const lib = getLibrary();
+    const newChap = { id: 'chapter-' + Date.now(), name: name.trim(), expanded: true, puzzles: [] };
+    lib.chapters.push(newChap);
+    lib.activeChapterId = newChap.id;
+    saveLibrary(lib);
+    renderLibrary($('librarySearch')?.value || '');
+    renderChapterSelect();
+    toast(`Chapter "${name.trim()}" created`, 'success');
+  });
+  $('btnSavePuzzle').addEventListener('click', saveCurrentPuzzle);
+  $('btnNewPuzzle').addEventListener('click', newPuzzle);
+  $('btnDeletePuzzle').addEventListener('click', deleteCurrentPuzzle);
+  $('btnCapturePosition').addEventListener('click', captureCurrentPosition);
+  $('btnLoadPosition').addEventListener('click', () => loadFENToBoard($('puzzleFen').value.trim()));
+  $('btnTestPuzzle').addEventListener('click', testPuzzleAsStudent);
+  $('btnExportLibrary').addEventListener('click', exportLibrary);
+  $('btnImportLibrary').addEventListener('click', () => $('libraryFileInput').click());
+  $('libraryFileInput').addEventListener('change', (e) => {
+    if (e.target.files[0]) importLibrary(e.target.files[0]);
+    e.target.value = '';
+  });
+
   safeCall('bindEvents', bindEvents);
 
   // Try to init engine, but don't block the rest
