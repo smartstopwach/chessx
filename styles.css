@@ -263,8 +263,10 @@ body {
 .layout[data-layout="board"] .sidebar { display: none; }
 
 /* FOCUS LAYOUT (default): hide left sidebar, narrow right sidebar — board fills most space */
-.layout[data-layout="focus"] { grid-template-columns: 0 1fr 280px; }
+.layout[data-layout="focus"] { grid-template-columns: 1fr 280px; }
 .layout[data-layout="focus"] .sidebar-left { display: none; }
+.layout[data-layout="focus"] .board-area { grid-column: 1; }
+.layout[data-layout="focus"] .sidebar-right { grid-column: 2; }
 
 .layout[data-layout="moves"] { grid-template-columns: 0 1fr 320px; }
 .layout[data-layout="moves"] .sidebar-left { display: none; }
@@ -1286,3 +1288,6 @@ textarea {
    ============================================ */
 .layout.left-sidebar-visible { grid-template-columns: 280px 1fr 280px; }
 .layout.left-sidebar-visible .sidebar-left { display: flex; }
+.layout.left-sidebar-visible .sidebar-left { grid-column: 1; }
+.layout.left-sidebar-visible .board-area { grid-column: 2; }
+.layout.left-sidebar-visible .sidebar-right { grid-column: 3; }
