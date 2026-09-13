@@ -1426,6 +1426,18 @@ document.addEventListener('keydown', (e) => {
   if (e.target.matches('input, textarea, select')) return;
 
   switch (e.key) {
+    case 'e': case 'E':
+      // Toggle setup mode
+      state.setupMode = !state.setupMode;
+      if (!state.setupMode) {
+        state.heldPiece = null;
+        state.selectedRackPiece = null;
+        $$('.rack-piece').forEach(x => x.classList.remove('selected'));
+        $$('.square').forEach(sq => sq.classList.remove('drop-target'));
+      }
+      toast(state.setupMode ? 'Setup Mode: ON — click/drag to edit position' : 'Setup Mode: OFF — play moves normally');
+      updateSetupHint();
+      break;
     case 'ArrowLeft': e.preventDefault(); prevMove(); break;
     case 'ArrowRight': e.preventDefault(); nextMove(); break;
     case 'f': case 'F': flipBoard(); break;
@@ -1511,6 +1523,28 @@ function bindEvents() {
     requestEngineEval();
     toast('Position set', 'success');
   });
+  // Setup mode toggle button (topbar)
+  $('btnToggleSetup').addEventListener('click', () => {
+    state.setupMode = !state.setupMode;
+    if (!state.setupMode) {
+      state.heldPiece = null;
+      state.selectedRackPiece = null;
+      $$('.rack-piece').forEach(x => x.classList.remove('selected'));
+      $$('.square').forEach(sq => sq.classList.remove('drop-target'));
+    }
+    $('btnToggleSetup').classList.toggle('active', state.setupMode);
+    toast(state.setupMode ? 'Setup Mode: ON — click/drag to edit position' : 'Setup Mode: OFF — play moves normally');
+    updateSetupHint();
+  });
+
+  // Position setup advanced controls
+  $('btnSetupUndo').addEventListener('click', setupUndo);
+  $('btnSetupRedo').addEventListener('click', setupRedo);
+  $$('.preset-btn').forEach(btn => {
+    btn.addEventListener('click', () => loadPreset(btn.dataset.preset));
+  });
+  $('btnLoadStandard').addEventListener('click', () => loadPreset('standard'));
+
   $('btnClearBoard').addEventListener('click', clearBoard);
 
   $('btnLoadFen').addEventListener('click', loadFen);
@@ -1530,9 +1564,13 @@ function bindEvents() {
   });
 
   $('btnEngineToggle').addEventListener('click', toggleEngine);
-  // Toggle left sidebar (Tools) visibility
+  // Toggle left sidebar (Tools) visibility — also enters setup mode
   $('btnToggleLeftSidebar').addEventListener('click', () => {
     els.layout.classList.toggle('left-sidebar-visible');
+    state.setupMode = true; // entering setup mode when tools shown
+    state.heldPiece = null;
+    state.selectedRackPiece = null;
+    updateSetupHint();
     setTimeout(autoFitBoard, 50);
   });
 
