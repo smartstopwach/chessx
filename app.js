@@ -1623,8 +1623,16 @@ function bindEvents() {
     if (state.clock.running) setTimeout(switchClockSide, 100);
   });
 
-  // Prevent right-click menu on board
-  els.board.addEventListener('contextmenu', (e) => e.preventDefault());
+  // Prevent right-click menu on board AND erase piece in setup mode
+  els.board.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    if (state.setupMode) {
+      const sq = e.target.closest('.square');
+      if (sq) {
+        erasePieceAt(sq.dataset.square);
+      }
+    }
+  });
 
   // Double-click: pick up piece under cursor (in setup mode)
   els.board.addEventListener('dblclick', (e) => {
