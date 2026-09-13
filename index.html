@@ -108,8 +108,22 @@
         Position Setup
       </div>
       <div class="position-editor">
+        <div class="setup-hint" id="setupHint">Click a piece in rack OR double-click a board piece · drag pieces too</div>
+        <div class="setup-tools">
+          <button class="btn-mini" id="btnSetupUndo" title="Undo (Ctrl+Z)">↶ Undo</button>
+          <button class="btn-mini" id="btnSetupRedo" title="Redo (Ctrl+Y)">↷ Redo</button>
+          <span class="piece-count" id="pieceCount" title="Pieces on board: white · black">0·0</span>
+        </div>
         <div class="piece-rack" id="pieceRack">
-          <!-- Filled by JS -->
+          <!-- Filled by JS — drag pieces or click to select -->
+        </div>
+        <div class="preset-grid">
+          <button class="preset-btn" data-preset="standard" title="Standard starting position">Standard</button>
+          <button class="preset-btn" data-preset="empty" title="Empty board">Empty</button>
+          <button class="preset-btn" data-preset="kings" title="Just the two kings">K vs K</button>
+          <button class="preset-btn" data-preset="endgame_kq" title="King + Queen vs King">K+Q vs K</button>
+          <button class="preset-btn" data-preset="endgame_krk" title="King + Rook vs King">K+R vs K</button>
+          <button class="preset-btn" data-preset="castling_test" title="Castling test position">Castling</button>
         </div>
         <div class="pos-controls">
           <label class="checkbox-row"><input type="checkbox" id="optWhiteCastleK"> <span>White O-O</span></label>
@@ -123,11 +137,32 @@
               <option value="b">Black</option>
             </select>
           </div>
+          <div class="row">
+            <span class="small-label">En passant</span>
+            <select id="optEnPassant">
+              <option value="-">—</option>
+              <option value="a3">a3</option><option value="b3">b3</option><option value="c3">c3</option>
+              <option value="d3">d3</option><option value="e3">e3</option><option value="f3">f3</option>
+              <option value="g3">g3</option><option value="h3">h3</option>
+              <option value="a6">a6</option><option value="b6">b6</option><option value="c6">c6</option>
+              <option value="d6">d6</option><option value="e6">e6</option><option value="f6">f6</option>
+              <option value="g6">g6</option><option value="h6">h6</option>
+            </select>
+          </div>
+          <div class="row">
+            <span class="small-label">Halfmove</span>
+            <input type="number" id="optHalfmove" min="0" max="100" value="0" style="width:60px">
+            <span class="small-label">Fullmove</span>
+            <input type="number" id="optFullmove" min="1" max="500" value="1" style="width:60px">
+          </div>
           <button class="btn-primary-full" id="btnStartFromPosition">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
             START FROM POSITION
           </button>
-          <button class="btn-ghost-full" id="btnClearBoard">Clear Board</button>
+          <div class="row">
+            <button class="btn-ghost-full" id="btnClearBoard">Clear Board</button>
+            <button class="btn-ghost-full" id="btnLoadStandard">Reset to Start</button>
+          </div>
         </div>
       </div>
     </div>
