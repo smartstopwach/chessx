@@ -1166,7 +1166,9 @@ function switchClockSide() {
 function enterRecordingMode() {
   document.body.classList.add('recording-mode');
   state.recording.mode = true;
-  setLayout('board');
+  // Don't set a layout — let CSS default (both sidebars visible) take effect
+  // Just sync the layout-btn active states: none should be active in default
+  $$('.layout-btn').forEach(b => b.classList.remove('active'));
   $('recordingBar').classList.remove('hidden');
   startRecTimer();
 }
@@ -1335,9 +1337,13 @@ document.addEventListener('keydown', (e) => {
     case 'z': case 'Z':
       if (e.ctrlKey || e.metaKey) {
         e.preventDefault();
-        state.game.undo();
-        state.historyIndex = state.game.history().length - 1;
-        renderAll();
+        prevMove();  // Route through same path as Undo button
+      }
+      break;
+    case 'y': case 'Y':
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        nextMove();  // Redo
       }
       break;
     case 'Escape': if (state.recording.mode) exitRecordingMode(); break;
@@ -1366,6 +1372,7 @@ function bindEvents() {
   $('btnFlip').addEventListener('click', flipBoard);
   $('btnReset').addEventListener('click', resetBoard);
   $('btnUndo').addEventListener('click', () => { prevMove(); });
+  $('btnRedo').addEventListener('click', () => { nextMove(); });
   $('btnFullscreen').addEventListener('click', () => {
     if (!document.fullscreenElement) document.documentElement.requestFullscreen();
     else document.exitFullscreen();
