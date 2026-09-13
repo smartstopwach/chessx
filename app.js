@@ -62,7 +62,6 @@ const state = {
   puzzle: null,
   puzzleAnswer: null,
   clock: { wTime: 600, bTime: 600, running: false, activeColor: 'w', interval: null },
-  recording: { mode: false, mediaRecorder: null, chunks: [], stream: null, startTime: 0, timer: null, paused: false, micStream: null, micEnabled: false, micAnalyser: null, micMeterRaf: null, micMeterFill: null, micAudioCtx: null, webcamStream: null },
   layout: 'board',
   uiHidden: false,
   titleHidden: false,
@@ -541,8 +540,6 @@ function clearAllAnnotations() {
 function setTool(tool) {
   state.currentTool = tool;
   $$('.tool-btn').forEach(b => b.classList.toggle('active', b.dataset.tool === tool));
-  // Also sync recording bar tool buttons
-  $$('#recTools .rec-tool').forEach(b => b.classList.toggle('active', b.dataset.tool === tool));
   els.board.style.cursor = (tool === 'arrow' || tool === 'rectangle') ? 'crosshair' :
                            tool === 'eraser' ? 'not-allowed' : 'default';
 }
@@ -1187,335 +1184,6 @@ function switchClockSide() {
   $('clockWhite').classList.toggle('active', state.clock.activeColor === 'w' && state.clock.running);
   $('clockBlack').classList.toggle('active', state.clock.activeColor === 'b' && state.clock.running);
 }
-
-// ============================================
-// RECORDING MODE
-// ============================================
-function enterRecordingMode() {
-  document.body.classList.add('recording-mode');
-  state.recording.mode = true;
-  $$('.layout-btn').forEach(b => b.classList.remove('active'));
-  $('recordingBar').classList.remove('hidden');
-  startRecTimer();
-  toast('Recording mode active — set up your lesson', 'success');
-}
-
-function exitRecordingMode() {
-  document.body.classList.remove('recording-mode');
-  document.body.classList.remove('ui-hidden');
-  state.recording.mode = false;
-  state.uiHidden = false;
-  $('recordingBar').classList.add('hidden');
-  stopRecTimer();
-  // Clean up any active streams
-  if (state.recording.mediaRecorder) stopScreenRecording();
-  hideWebcam();
-}
-
-function startRecTimer() {
-  state.recording.startTime = Date.now();
-  state.recording.timer = setInterval(() => {
-    const elapsed = Math.floor((Date.now() - state.recording.startTime) / 1000);
-    $('recTimer').textContent = formatTime(elapsed);
-  }, 1000);
-}
-
-function stopRecTimer() {
-  if (state.recording.timer) clearInterval(state.recording.timer);
-  $('recTimer').textContent = '00:00';
-}
-
-function toggleUi() {
-  state.uiHidden = !state.uiHidden;
-  document.body.classList.toggle('ui-hidden', state.uiHidden);
-}
-
-async function toggleMic() {
-  if (state.recording.micEnabled) {
-    if (state.recording.micStream) {
-      state.recording.micStream.getTracks().forEach(t => t.stop());
-    }
-    if (state.recording.micAnalyser) {
-      state.recording.micAnalyser.disconnect();
-      state.recording.micAnalyser = null;
-    }
-    state.recording.micEnabled = false;
-    $('btnToggleMic').classList.remove('active');
-    if (state.recording.micMeterRaf) {
-      cancelAnimationFrame(state.recording.micMeterRaf);
-      state.recording.micMeterRaf = null;
-    }
-    const fill = $('micMeterFill');
-    if (fill) fill.style.width = '0%';
-    toast('Microphone off');
-    return;
-  }
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    state.recording.micStream = stream;
-    state.recording.micEnabled = true;
-    $('btnToggleMic').classList.add('active');
-    toast('Microphone on', 'success');
-
-    // Audio analyser for level meter
-    try {
-      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      const source = audioCtx.createMediaStreamSource(stream);
-      const analyser = audioCtx.createAnalyser();
-      analyser.fftSize = 256;
-      source.connect(analyser);
-      state.recording.micAnalyser = analyser;
-      state.recording.micAudioCtx = audioCtx;
-      state.recording.micMeterFill = $('micMeterFill');
-
-      const dataArray = new Uint8Array(analyser.frequencyBinCount);
-      const updateMeter = () => {
-        if (!state.recording.micAnalyser) return;
-        analyser.getByteFrequencyData(dataArray);
-        let sum = 0;
-        for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
-        const avg = sum / dataArray.length;
-        const pct = Math.min(100, (avg / 128) * 100);
-        if (state.recording.micMeterFill) {
-          state.recording.micMeterFill.style.width = pct + '%';
-        }
-        state.recording.micMeterRaf = requestAnimationFrame(updateMeter);
-      };
-      updateMeter();
-    } catch (e) {
-      console.warn('Audio analyser failed:', e);
-    }
-  } catch (e) {
-    toast('Microphone permission denied', 'error');
-  }
-}
-
-// ============================================
-// WEBCAM PIP (Recordly-style picture-in-picture)
-// ============================================
-async function toggleWebcam() {
-  const pip = $('webcamPip');
-  if (!pip.classList.contains('hidden')) {
-    hideWebcam();
-    return;
-  }
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: { width: { ideal: 640 }, height: { ideal: 480 } },
-      audio: false
-    });
-    state.recording.webcamStream = stream;
-    $('webcamVideo').srcObject = stream;
-    pip.classList.remove('hidden');
-    pip.classList.add('size-md');
-    $('btnToggleWebcam').classList.add('active');
-    toast('Webcam on', 'success');
-    initWebcamDrag();
-  } catch (e) {
-    toast('Webcam permission denied', 'error');
-  }
-}
-
-function hideWebcam() {
-  if (state.recording.webcamStream) {
-    state.recording.webcamStream.getTracks().forEach(t => t.stop());
-    state.recording.webcamStream = null;
-  }
-  $('webcamVideo').srcObject = null;
-  $('webcamPip').classList.add('hidden');
-  $('btnToggleWebcam').classList.remove('active');
-}
-
-function cycleWebcamSize() {
-  const pip = $('webcamPip');
-  const sizes = ['size-sm', 'size-md', 'size-lg', 'size-xl'];
-  const current = sizes.find(s => pip.classList.contains(s)) || 'size-md';
-  const idx = sizes.indexOf(current);
-  const next = sizes[(idx + 1) % sizes.length];
-  sizes.forEach(s => pip.classList.remove(s));
-  pip.classList.add(next);
-}
-
-function toggleWebcamFullscreen() {
-  const pip = $('webcamPip');
-  if (document.fullscreenElement === pip) {
-    document.exitFullscreen();
-  } else if (pip.requestFullscreen) {
-    pip.requestFullscreen();
-  }
-}
-
-function initWebcamDrag() {
-  const pip = $('webcamPip');
-  const handle = $('webcamHandle');
-  let isDragging = false;
-  let startX, startY, startLeft, startBottom;
-
-  const onStart = (e) => {
-    if (e.target.closest('.webcam-btn')) return;
-    isDragging = true;
-    const pt = e.touches ? e.touches[0] : e;
-    startX = pt.clientX;
-    startY = pt.clientY;
-    const rect = pip.getBoundingClientRect();
-    startLeft = rect.left;
-    startBottom = window.innerHeight - rect.bottom;
-    e.preventDefault();
-  };
-
-  const onMove = (e) => {
-    if (!isDragging) return;
-    const pt = e.touches ? e.touches[0] : e;
-    const dx = pt.clientX - startX;
-    const dy = pt.clientY - startY;
-    pip.style.left = Math.max(0, Math.min(window.innerWidth - 100, startLeft + dx)) + 'px';
-    pip.style.right = 'auto';
-    pip.style.bottom = Math.max(0, Math.min(window.innerHeight - 100, startBottom - dy)) + 'px';
-    pip.style.top = 'auto';
-  };
-
-  const onEnd = () => { isDragging = false; };
-
-  handle.addEventListener('mousedown', onStart);
-  handle.addEventListener('touchstart', onStart);
-  document.addEventListener('mousemove', onMove);
-  document.addEventListener('touchmove', onMove);
-  document.addEventListener('mouseup', onEnd);
-  document.addEventListener('touchend', onEnd);
-}
-
-// ============================================
-// COUNTDOWN OVERLAY (Recordly-style 3-2-1)
-// ============================================
-function runCountdown(callback) {
-  const overlay = $('countdownOverlay');
-  const num = $('countdownNumber');
-  overlay.classList.remove('hidden');
-
-  let count = 3;
-  num.textContent = count;
-  num.style.animation = 'none';
-  void num.offsetWidth;
-  num.style.animation = '';
-
-  const tick = setInterval(() => {
-    count--;
-    if (count > 0) {
-      num.textContent = count;
-      num.style.animation = 'none';
-      void num.offsetWidth;
-      num.style.animation = '';
-    } else {
-      clearInterval(tick);
-      overlay.classList.add('hidden');
-      callback();
-    }
-  }, 1000);
-}
-
-// ============================================
-// SCREEN RECORDING (Browser MediaRecorder)
-// ============================================
-async function startScreenRecordingWithCountdown() {
-  runCountdown(async () => {
-    await startScreenRecording();
-  });
-}
-
-async function startScreenRecording() {
-  try {
-    const stream = await navigator.mediaDevices.getDisplayMedia({
-      video: { cursor: 'always' },
-      audio: true
-    });
-    state.recording.stream = stream;
-    state.recording.chunks = [];
-
-    let combinedStream = stream;
-    if (state.recording.micStream) {
-      const audioTracks = state.recording.micStream.getAudioTracks();
-      combinedStream = new MediaStream([
-        ...stream.getVideoTracks(),
-        ...stream.getAudioTracks(),
-        ...audioTracks
-      ]);
-    }
-
-    state.recording.mediaRecorder = new MediaRecorder(combinedStream, {
-      mimeType: getSupportedMimeType()
-    });
-
-    state.recording.mediaRecorder.ondataavailable = (e) => {
-      if (e.data.size > 0) state.recording.chunks.push(e.data);
-    };
-
-    state.recording.mediaRecorder.onstop = () => {
-      const blob = new Blob(state.recording.chunks, { type: 'video/webm' });
-      const url = URL.createObjectURL(blob);
-      $('recordedVideo').src = url;
-      $('videoModal').classList.remove('hidden');
-      $('recPreviewBar').classList.add('hidden');
-      $('btnDownloadRec').onclick = () => {
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `chess-lesson-${Date.now()}.webm`;
-        a.click();
-      };
-    };
-
-    state.recording.mediaRecorder.start();
-    state.recording.startTime = Date.now();
-    $('recPreviewBar').classList.remove('hidden');
-    $('recStatusText').textContent = 'Recording screen';
-    toast('Recording started!', 'success');
-
-    const liveTimer = setInterval(() => {
-      if (!state.recording.mediaRecorder || state.recording.mediaRecorder.state === 'inactive') {
-        clearInterval(liveTimer);
-        return;
-      }
-      const elapsed = Math.floor((Date.now() - state.recording.startTime) / 1000);
-      $('recLiveTimer').textContent = formatTime(elapsed);
-    }, 1000);
-
-    stream.getVideoTracks()[0].onended = () => {
-      stopScreenRecording();
-    };
-
-  } catch (err) {
-    $('obsModal').classList.remove('hidden');
-  }
-}
-
-function getSupportedMimeType() {
-  const types = ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm', 'video/mp4'];
-  for (const t of types) {
-    if (MediaRecorder.isTypeSupported(t)) return t;
-  }
-  return 'video/webm';
-}
-
-function pauseScreenRecording() {
-  if (state.recording.mediaRecorder && state.recording.mediaRecorder.state === 'recording') {
-    state.recording.mediaRecorder.pause();
-    $('btnPauseRec').textContent = 'Resume';
-    $('recStatusText').textContent = 'Paused';
-  } else if (state.recording.mediaRecorder && state.recording.mediaRecorder.state === 'paused') {
-    state.recording.mediaRecorder.resume();
-    $('btnPauseRec').textContent = 'Pause';
-    $('recStatusText').textContent = 'Recording...';
-  }
-}
-
-function stopScreenRecording() {
-  if (state.recording.mediaRecorder && state.recording.mediaRecorder.state !== 'inactive') {
-    state.recording.mediaRecorder.stop();
-  }
-  if (state.recording.stream) {
-    state.recording.stream.getTracks().forEach(t => t.stop());
-  }
-}
-
 // ============================================
 // KEYBOARD SHORTCUTS
 // ============================================
@@ -1531,22 +1199,21 @@ document.addEventListener('keydown', (e) => {
     case 'c': case 'C': setTool('circle'); break;
     case 'e': case 'E': setTool('eraser'); break;
     case 'v': case 'V': setTool('select'); break;
-    case 'h': case 'H': if (state.recording.mode) toggleUi(); else setTool('highlight'); break;
+    case 'h': case 'H': setTool('highlight'); break;
     case 'n': case 'N': nextBookmark(); break;
     case 'p': case 'P': prevBookmark(); break;
     case 'z': case 'Z':
       if (e.ctrlKey || e.metaKey) {
         e.preventDefault();
-        prevMove();  // Route through same path as Undo button
+        prevMove();
       }
       break;
     case 'y': case 'Y':
       if (e.ctrlKey || e.metaKey) {
         e.preventDefault();
-        nextMove();  // Redo
+        nextMove();
       }
       break;
-    case 'Escape': if (state.recording.mode) exitRecordingMode(); break;
   }
 });
 
@@ -1580,30 +1247,6 @@ function bindEvents() {
 
   $$('.layout-btn').forEach(b => b.addEventListener('click', () => setLayout(b.dataset.layout)));
 
-  $('btnRecordMode').addEventListener('click', enterRecordingMode);
-  $('btnExitRecMode').addEventListener('click', exitRecordingMode);
-  $('btnToggleUi').addEventListener('click', toggleUi);
-  $('btnToggleMic').addEventListener('click', toggleMic);
-  $('btnToggleWebcam').addEventListener('click', toggleWebcam);
-  $('btnStartScreenRec').addEventListener('click', startScreenRecordingWithCountdown);
-  $('btnWebcamHide').addEventListener('click', hideWebcam);
-  $('btnWebcamResize').addEventListener('click', cycleWebcamSize);
-  $('btnWebcamFullscreen').addEventListener('click', toggleWebcamFullscreen);
-
-  // Recording bar quick-access tools (drawing tools, undo/redo, flip, reset)
-  $$('#recTools .rec-tool').forEach(b => b.addEventListener('click', () => {
-    setTool(b.dataset.tool);
-  }));
-  $$('#recColors .rec-color').forEach(b => b.addEventListener('click', () => {
-    state.currentColor = b.dataset.color;
-    $$('#recColors .rec-color').forEach(x => x.classList.remove('active'));
-    b.classList.add('active');
-  }));
-  $('btnRecUndo').addEventListener('click', prevMove);
-  $('btnRecRedo').addEventListener('click', nextMove);
-  $('btnRecFlip').addEventListener('click', flipBoard);
-  $('btnRecReset').addEventListener('click', resetBoard);
-  $('btnRecClear').addEventListener('click', clearAllAnnotations);
 
   $$('.tool-btn').forEach(b => b.addEventListener('click', () => setTool(b.dataset.tool)));
   $$('.color-dot').forEach(b => b.addEventListener('click', () => {
@@ -1689,12 +1332,6 @@ function bindEvents() {
   $('btnZoomIn').addEventListener('click', () => setZoom(state.zoom + 0.1));
   $('btnZoomOut').addEventListener('click', () => setZoom(state.zoom - 0.1));
 
-  $('btnStopRec').addEventListener('click', stopScreenRecording);
-  $('btnPauseRec').addEventListener('click', pauseScreenRecording);
-  $('btnCloseModal').addEventListener('click', () => $('videoModal').classList.add('hidden'));
-  $('btnDiscardRec').addEventListener('click', () => $('videoModal').classList.add('hidden'));
-  $('btnCloseObsModal').addEventListener('click', () => $('obsModal').classList.add('hidden'));
-  $('btnCloseObsOk').addEventListener('click', () => $('obsModal').classList.add('hidden'));
 
   window.addEventListener('resize', () => renderAnnotations());
 

@@ -40,17 +40,8 @@
       <button class="layout-btn" data-layout="explain" title="Board + Notes">▥</button>
       <button class="layout-btn" data-layout="present" title="Presentation">▢</button>
     </div>
-
-    <div class="divider"></div>
-
-    <button class="btn-record" id="btnRecordMode" title="Recording Mode">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
-      <span>RECORDING MODE</span>
-    </button>
   </nav>
 </header>
-
-<!-- ================= LESSON TITLE ================= -->
 <section class="lesson-header" id="lessonHeader">
   <input type="text" class="lesson-title" id="lessonTitle" placeholder="Lesson Title (e.g. How to Play the Italian Game)" />
   <input type="text" class="lesson-subtitle" id="lessonSubtitle" placeholder="Subtitle (e.g. Understanding the Main Ideas)" />
@@ -419,160 +410,8 @@
   </aside>
 </main>
 
-<!-- ================= RECORDING MODE CONTROLS ================= -->
-<div class="recording-bar hidden" id="recordingBar">
-  <div class="rec-indicator">
-    <div class="rec-dot"></div>
-    <span>RECORDING MODE</span>
-  </div>
-  <div class="rec-timer" id="recTimer">00:00</div>
-  <div class="rec-divider"></div>
-  <div class="rec-tools" id="recTools">
-    <button class="rec-tool" data-tool="select" title="Select / Move (V)">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M5 3l14 8-6 2-2 6z"/></svg>
-    </button>
-    <button class="rec-tool" data-tool="arrow" title="Arrow (A)">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 20 L20 4 M14 4 H20 V10" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    </button>
-    <button class="rec-tool" data-tool="circle" title="Circle (C)">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="8"/></svg>
-    </button>
-    <button class="rec-tool" data-tool="highlight" title="Highlight (H)">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
-    </button>
-    <button class="rec-tool" data-tool="rectangle" title="Rectangle (R)">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="4" y="4" width="16" height="16"/></svg>
-    </button>
-    <button class="rec-tool" data-tool="eraser" title="Eraser (E)">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 20H7L3 16l9-9 9 9-5 5"/><line x1="18" y1="13" x2="9" y2="22"/></svg>
-    </button>
-  </div>
-  <div class="rec-colors" id="recColors">
-    <button class="rec-color active" style="--c:#ef4444" data-color="#ef4444"></button>
-    <button class="rec-color" style="--c:#22c55e" data-color="#22c55e"></button>
-    <button class="rec-color" style="--c:#3b82f6" data-color="#3b82f6"></button>
-    <button class="rec-color" style="--c:#eab308" data-color="#eab308"></button>
-    <button class="rec-color" style="--c:#f97316" data-color="#f97316"></button>
-    <button class="rec-color" style="--c:#a855f7" data-color="#a855f7"></button>
-  </div>
-  <div class="rec-divider"></div>
-  <div class="rec-actions">
-    <button class="rec-btn" id="btnRecUndo" title="Undo (Ctrl+Z)">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 14l-4-4 4-4"/><path d="M5 10h11a4 4 0 0 1 0 8h-4"/></svg>
-    </button>
-    <button class="rec-btn" id="btnRecRedo" title="Redo (Ctrl+Y)">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 14l4-4-4-4"/><path d="M19 10H8a4 4 0 0 0 0 8h4"/></svg>
-    </button>
-    <button class="rec-btn" id="btnRecFlip" title="Flip Board (F)">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 12l4-4M3 12l4 4M21 12l-4-4M21 12l-4 4"/></svg>
-    </button>
-    <button class="rec-btn" id="btnRecReset" title="Reset">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
-    </button>
-    <button class="rec-btn" id="btnRecClear" title="Clear Annotations">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
-    </button>
-  </div>
-  <div class="rec-divider"></div>
-  <div class="rec-actions">
-    <button class="rec-btn" id="btnToggleMic" title="Microphone">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
-      <span class="mic-meter" id="micMeter"><span class="mic-meter-fill" id="micMeterFill"></span></span>
-    </button>
-    <button class="rec-btn" id="btnToggleWebcam" title="Webcam">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
-    </button>
-    <button class="rec-btn" id="btnToggleUi" title="Hide UI (H)">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-    </button>
-    <button class="rec-btn rec-btn-record" id="btnStartScreenRec" title="Start Screen Recording">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
-      <span>REC</span>
-    </button>
-    <button class="rec-btn rec-btn-danger" id="btnExitRecMode" title="Exit Recording Mode">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-    </button>
-  </div>
-</div>
-
-<!-- ================= WEBCAM PIP OVERLAY ================= -->
-<div class="webcam-pip hidden" id="webcamPip">
-  <video id="webcamVideo" autoplay muted playsinline></video>
-  <div class="webcam-controls" id="webcamControls">
-    <button class="webcam-btn" id="btnWebcamHide" title="Hide">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><line x1="2" y1="2" x2="22" y2="22"/></svg>
-    </button>
-    <button class="webcam-btn" id="btnWebcamFullscreen" title="Fullscreen">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8V3h5M21 8V3h-5M3 16v5h5M21 16v5h-5"/></svg>
-    </button>
-    <button class="webcam-btn" id="btnWebcamResize" title="Cycle Size">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 9V3h-6M3 21v-6h6M21 3l-7 7M3 21l7-7"/></svg>
-    </button>
-  </div>
-  <div class="webcam-handle" id="webcamHandle">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg>
-  </div>
-</div>
-
-<!-- ================= COUNTDOWN OVERLAY ================= -->
-<div class="countdown-overlay hidden" id="countdownOverlay">
-  <div class="countdown-number" id="countdownNumber">3</div>
-  <div class="countdown-label">Recording starts in</div>
-</div>
-
 <!-- ================= NOTIFICATION ================= -->
 <div class="toast" id="toast"></div>
-
-<!-- ================= HIDDEN VIDEO RECORDING ================= -->
-<video id="recPreview" autoplay muted playsinline style="display:none"></video>
-<div class="rec-preview-bar hidden" id="recPreviewBar">
-  <div class="rec-status">
-    <div class="rec-dot"></div>
-    <span id="recStatusText">Recording...</span>
-    <span id="recLiveTimer">00:00</span>
-  </div>
-  <div class="rec-preview-actions">
-    <button class="rec-btn" id="btnPauseRec">Pause</button>
-    <button class="rec-btn rec-btn-danger" id="btnStopRec">Stop</button>
-  </div>
-</div>
-
-<!-- Modal for recorded video -->
-<div class="modal hidden" id="videoModal">
-  <div class="modal-content">
-    <div class="modal-header">
-      <h3>Recording Complete</h3>
-      <button class="btn-icon" id="btnCloseModal">✕</button>
-    </div>
-    <video id="recordedVideo" controls style="width:100%; border-radius:8px;"></video>
-    <div class="modal-actions">
-      <button class="btn-primary-full" id="btnDownloadRec">Download Video</button>
-      <button class="btn-ghost-full" id="btnDiscardRec">Discard</button>
-    </div>
-  </div>
-</div>
-
-<!-- Confirmation Modal for OBS -->
-<div class="modal hidden" id="obsModal">
-  <div class="modal-content">
-    <div class="modal-header">
-      <h3>Screen Recording Not Available</h3>
-      <button class="btn-icon" id="btnCloseObsModal">✕</button>
-    </div>
-    <p style="color:var(--text-secondary); line-height:1.7; margin: 12px 0;">
-      Your browser does not allow direct screen recording, or you declined permission.
-      For the best recording quality, we recommend using <strong>OBS Studio</strong> (free) or your OS's built-in screen recorder.
-    </p>
-    <div style="background:var(--bg-tertiary); padding:14px; border-radius:8px; margin:12px 0; font-size:13px; color:var(--text-secondary);">
-      <strong style="color:var(--text-primary)">Quick OBS setup:</strong><br>
-      1. Open OBS Studio → Sources → + → Window Capture<br>
-      2. Select this browser tab<br>
-      3. Enable Audio → Desktop Audio (to capture your mic)<br>
-      4. Click "Start Recording"
-    </div>
-    <button class="btn-primary-full" id="btnCloseObsOk">Got it</button>
-  </div>
-</div>
 
 <script src="chess.min.js"></script>
 <script src="pieces.js"></script>
