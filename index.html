@@ -503,6 +503,40 @@
           <button class="btn-mini" id="btnLoadPosition" title="Load this FEN to board">⬇ Load</button>
         </div>
         <textarea id="puzzleFen" rows="2" placeholder="FEN string..." style="display:none"></textarea>
+        <div class="position-setup-inline">
+          <div class="setup-toggle-row">
+            <button class="btn-mini toggle" id="btnToggleInlineSetup" title="Show/hide position setup tools">
+              ⚙ Position Setup Tools
+            </button>
+            <span class="setup-inline-hint">Click a piece, then click a square · drag pieces too · right-click to erase</span>
+          </div>
+          <div class="position-setup-body collapsed" id="inlineSetupBody">
+            <div class="setup-hint-mini" id="inlineSetupHint">Pick a piece from the rack or click a preset below</div>
+            <div class="setup-tools-mini">
+              <button class="btn-mini" id="btnInlineSetupUndo" title="Undo setup change">↶ Undo</button>
+              <button class="btn-mini" id="btnInlineSetupRedo" title="Redo setup change">↷ Redo</button>
+              <span class="piece-count-mini" id="inlinePieceCount" title="Pieces on board: white · black">0·0</span>
+              <span class="setup-spacer"></span>
+              <button class="btn-mini" id="btnInlineClearBoard" title="Empty the board">⌀ Empty</button>
+              <button class="btn-mini" id="btnInlineLoadStandard" title="Reset to starting position">↻ Start</button>
+            </div>
+            <div class="piece-rack-mini" id="inlinePieceRack">
+              <!-- Filled by JS — drag pieces or click to select -->
+            </div>
+            <div class="preset-row-mini">
+              <button class="preset-btn-mini" data-preset="standard" title="Standard starting position">Standard</button>
+              <button class="preset-btn-mini" data-preset="empty" title="Empty board">Empty</button>
+              <button class="preset-btn-mini" data-preset="kings" title="Just the two kings">K vs K</button>
+              <button class="preset-btn-mini" data-preset="endgame_kq" title="King + Queen vs King">K+Q vs K</button>
+              <button class="preset-btn-mini" data-preset="endgame_krk" title="King + Rook vs King">K+R vs K</button>
+              <button class="preset-btn-mini" data-preset="castling_test" title="Castling test position">Castling</button>
+            </div>
+            <button class="btn-primary-full btn-capture-mini" id="btnInlineCaptureToPuzzle" title="Use the current board position as this puzzle's starting position">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              USE THIS POSITION FOR PUZZLE
+            </button>
+          </div>
+        </div>
       </div>
       <div class="editor-row chapter-select-row">
         <label>Chapter</label>

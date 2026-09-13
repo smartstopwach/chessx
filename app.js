@@ -591,6 +591,8 @@ function selectRackPiece(p) {
   $$('.rack-piece').forEach(x => x.classList.remove('selected'));
   const el = document.querySelector(`.rack-piece[data-piece="${p}"]`);
   if (el) el.classList.add('selected');
+  // Also sync the inline rack (if it exists in the puzzle editor)
+  $$('.rack-piece-mini').forEach(x => x.classList.toggle('selected', x.dataset.piece === p));
   toast(`Holding ${pieceName(p)} — click square to place, right-click square to erase.`);
   updateSetupHint();
   highlightDropSquares();
@@ -643,6 +645,8 @@ function updateSetupHint() {
     hint.innerHTML = `Click a piece in rack OR double-click a board piece · drag pieces too`;
     hint.classList.remove('active');
   }
+  // also update inline hint if it's open
+  updateInlineSetupHint();
 }
 
 function pieceName(p) {
@@ -792,6 +796,8 @@ function updatePieceCount() {
   const wCount = counts.P + counts.N + counts.B + counts.R + counts.Q + counts.K;
   const bCount = counts.p + counts.n + counts.b + counts.r + counts.q + counts.k;
   el.innerHTML = `<span class="count-w">${wCount}</span><span class="count-sep">·</span><span class="count-b">${bCount}</span>`;
+  // also update inline piece count
+  updateInlinePieceCount();
 }
 
 // Quick position presets
@@ -1527,6 +1533,107 @@ function testPuzzleAsStudent() {
 }
 
 // ============================================
+// ============================================
+// INLINE POSITION SETUP (inside Puzzle Editor)
+// ============================================
+// Mirrors the left-sidebar Position Setup but lives inside the puzzle editor.
+// Both racks share state — picking a piece highlights both rack rows.
+function initInlinePieceRack() {
+  const rack = $('inlinePieceRack');
+  if (!rack) return;
+  rack.innerHTML = '';
+  const pieces = ['K', 'Q', 'R', 'B', 'N', 'P', 'k', 'q', 'r', 'b', 'n', 'p'];
+  pieces.forEach(p => {
+    const div = document.createElement('div');
+    div.className = 'rack-piece-mini';
+    div.dataset.piece = p;
+    if (typeof PIECE_SVG !== 'undefined' && PIECE_SVG[p]) {
+      div.innerHTML = PIECE_SVG[p];
+    } else {
+      div.textContent = PIECE_FONT[p];
+      div.style.color = p === p.toUpperCase() ? '#ffffff' : '#1a1a1a';
+    }
+    // Click: select rack piece for placement
+    div.addEventListener('click', (e) => {
+      e.stopPropagation();
+      selectRackPiece(p);
+      // also highlight inline rack
+      $$('.rack-piece-mini').forEach(x => x.classList.toggle('selected', x.dataset.piece === p));
+    });
+    // Drag: drag-and-drop placement
+    div.addEventListener('dragstart', (e) => {
+      state.dragPiece = p;
+      state.setupMode = true;
+      e.dataTransfer.setData('text/plain', p);
+      e.dataTransfer.effectAllowed = 'copy';
+      div.classList.add('dragging');
+      selectRackPiece(p);
+    });
+    div.addEventListener('dragend', () => {
+      div.classList.remove('dragging');
+    });
+    div.setAttribute('draggable', 'true');
+    rack.appendChild(div);
+  });
+}
+
+function updateInlinePieceCount() {
+  const el = $('inlinePieceCount');
+  if (!el) return;
+  const fen = state.game.fen().split(' ')[0];
+  const counts = { K:0, Q:0, R:0, B:0, N:0, P:0, k:0, q:0, r:0, b:0, n:0, p:0 };
+  for (const ch of fen) {
+    if (counts[ch] !== undefined) counts[ch]++;
+  }
+  const wCount = counts.P + counts.N + counts.B + counts.R + counts.Q + counts.K;
+  const bCount = counts.p + counts.n + counts.b + counts.r + counts.q + counts.k;
+  el.innerHTML = `<span class="count-w">${wCount}</span><span class="count-sep">·</span><span class="count-b">${bCount}</span>`;
+}
+
+function updateInlineSetupHint() {
+  const hint = $('inlineSetupHint');
+  if (!hint) return;
+  if (state.heldPiece) {
+    hint.innerHTML = `<span class="hint-active">Holding: <strong>${pieceName(state.heldPiece.piece)}</strong></span> · click square to place · right-click to erase`;
+    hint.classList.add('active');
+  } else {
+    hint.textContent = 'Pick a piece from the rack or click a preset below';
+    hint.classList.remove('active');
+  }
+}
+
+function toggleInlineSetup() {
+  const body = $('inlineSetupBody');
+  const btn = $('btnToggleInlineSetup');
+  if (!body || !btn) return;
+  const collapsed = body.classList.toggle('collapsed');
+  btn.classList.toggle('active', !collapsed);
+  if (!collapsed) {
+    // Auto-enable setup mode when opened
+    state.setupMode = true;
+    updateSetupHint();
+    updateInlineSetupHint();
+  }
+}
+
+function inlineCaptureToPuzzle() {
+  captureCurrentPosition();
+  // Toast extra context
+  toast('Puzzle FEN updated from board position', 'success');
+}
+
+// Wrapper for inline undo/redo that also updates inline count + hint
+function inlineSetupUndo() {
+  setupUndo();
+  updateInlinePieceCount();
+  updateInlineSetupHint();
+}
+function inlineSetupRedo() {
+  setupRedo();
+  updateInlinePieceCount();
+  updateInlineSetupHint();
+}
+
 // AUTHORING MODE — distinct visual state when making puzzles
 // ============================================
 function setAuthoringMode(on) {
@@ -2143,6 +2250,7 @@ function doInit() {
 
   // Then do the rest independently
   safeCall('initPieceRack', initPieceRack);
+  safeCall('initInlinePieceRack', initInlinePieceRack);
   renderLibrary();
   renderChapterSelect();
   loadPuzzleToEditor(null);
@@ -2183,6 +2291,28 @@ function doInit() {
   $('btnDeletePuzzle').addEventListener('click', deleteCurrentPuzzle);
   $('btnCapturePosition').addEventListener('click', captureCurrentPosition);
   $('btnLoadPosition').addEventListener('click', () => loadFENToBoard($('puzzleFen').value.trim()));
+
+  // Inline position setup (inside puzzle editor)
+  $('btnToggleInlineSetup').addEventListener('click', toggleInlineSetup);
+  $('btnInlineSetupUndo').addEventListener('click', inlineSetupUndo);
+  $('btnInlineSetupRedo').addEventListener('click', inlineSetupRedo);
+  $('btnInlineClearBoard').addEventListener('click', () => {
+    clearBoard();
+    updateInlinePieceCount();
+    updateInlineSetupHint();
+    toast('Board cleared', 'success');
+  });
+  $('btnInlineLoadStandard').addEventListener('click', () => loadPreset('standard'));
+  $('btnInlineCaptureToPuzzle').addEventListener('click', inlineCaptureToPuzzle);
+  $$('.preset-btn-mini').forEach(btn => {
+    btn.addEventListener('click', () => {
+      loadPreset(btn.dataset.preset);
+      updateInlinePieceCount();
+      updateInlineSetupHint();
+      // auto-capture the preset FEN to the puzzle's FEN field
+      inlineCaptureToPuzzle();
+    });
+  });
   $('btnTestPuzzle').addEventListener('click', testPuzzleAsStudent);
   $('btnExportLibrary').addEventListener('click', exportLibrary);
   $('btnImportLibrary').addEventListener('click', () => $('libraryFileInput').click());
