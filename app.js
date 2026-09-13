@@ -55,7 +55,6 @@ const state = {
   boardTheme: 'classic',
   pieceStyle: 'alpha',
   boardSize: 640,
-  zoom: 1,
   bookmarks: [],
   variations: [],
   currentVariation: 'main',
@@ -111,7 +110,6 @@ const els = {
   puzzleAnswer: $('puzzleAnswer'),
   puzzleAnswerMove: $('puzzleAnswerMove'),
   toast: $('toast'),
-  zoomLevel: $('zoomLevel'),
 };
 
 // ============================================
@@ -1064,49 +1062,22 @@ function setEngineMultiPV(n) {
 }
 
 // ============================================
-// ZOOM
+// AUTO-FIT BOARD (always fills available space)
 // ============================================
-function setZoom(z) {
-  state.zoom = Math.max(0.6, Math.min(1.6, z));
-  const size = Math.round(640 * state.zoom);
-  els.boardContainer.style.setProperty('--board-size', size + 'px');
-  $('zoomLevel').textContent = Math.round(state.zoom * 100) + '%';
-  // Disable buttons at limits
-  const out = $('btnZoomOut');
-  const inn = $('btnZoomIn');
-  if (out) out.disabled = state.zoom <= 0.6;
-  if (inn) inn.disabled = state.zoom >= 1.6;
-  setTimeout(() => { renderAnnotations(); autoFitBoard(); }, 50);
-}
-
-// Auto-fit board to fill the available space in board-area (always square)
 function autoFitBoard() {
   const wrapper = document.getElementById('boardWrapper');
   const boardContainer = document.getElementById('boardContainer');
   if (!wrapper || !boardContainer) return;
 
-  const cs = window.getComputedStyle(wrapper);
   // Available space inside wrapper (account for player-info rows above/below)
   const availW = wrapper.clientWidth - 24; // small padding buffer
   const availH = wrapper.clientHeight - 80; // player info rows ~70px total
 
-  // Pick the smaller to keep square, then clamp to [320, 1000]
-  let size = Math.max(320, Math.min(1000, Math.min(availW, availH)));
+  // Pick the smaller to keep square, then clamp to [320, 1100]
+  const size = Math.max(320, Math.min(1100, Math.min(availW, availH)));
 
-  // Don't override user-set zoom unless they haven't manually changed it,
-  // OR if the current zoom would make board too big/small for available space
-  const currentSize = Math.round(640 * state.zoom);
-  // If the auto-fit size differs significantly from current, snap to it
-  if (Math.abs(size - currentSize) > 20) {
-    const zoom = size / 640;
-    state.zoom = Math.max(0.6, Math.min(1.6, zoom));
-    const finalSize = Math.round(640 * state.zoom);
-    boardContainer.style.setProperty('--board-size', finalSize + 'px');
-    if ($('zoomLevel')) {
-      $('zoomLevel').textContent = Math.round(state.zoom * 100) + '%';
-    }
-  }
-  setTimeout(() => { renderAnnotations(); autoFitBoard(); }, 50);
+  boardContainer.style.setProperty('--board-size', Math.round(size) + 'px');
+  setTimeout(renderAnnotations, 50);
 }
 
 // ============================================
@@ -1249,20 +1220,6 @@ document.addEventListener('keydown', (e) => {
         nextMove();
       }
       break;
-    case '+': case '=':
-      e.preventDefault();
-      setZoom(state.zoom + 0.1);
-      break;
-    case '-': case '_':
-      e.preventDefault();
-      setZoom(state.zoom - 0.1);
-      break;
-    case '0':
-      if (e.ctrlKey || e.metaKey) {
-        e.preventDefault();
-        setZoom(1);
-      }
-      break;
   }
 });
 
@@ -1378,9 +1335,7 @@ function bindEvents() {
     if (e.target.files[0]) importLessonFile(e.target.files[0]);
   });
 
-  $('btnZoomIn').addEventListener('click', () => setZoom(state.zoom + 0.1));
-  $('btnZoomOut').addEventListener('click', () => setZoom(state.zoom - 0.1));
-  $('btnZoomReset').addEventListener('click', () => setZoom(1));
+  // Zoom buttons removed — board auto-fits to available space
 
 
   window.addEventListener('resize', () => { autoFitBoard(); renderAnnotations(); });
