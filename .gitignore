@@ -1,0 +1,6 @@
+# ChessX Professional Chess Teaching Studio
+node_modules/
+.DS_Store
+*.log
+.idea/
+.vscode/

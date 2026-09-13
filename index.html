@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ChessX — Professional Chess Teaching Studio</title>
+<link rel="stylesheet" href="styles.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- ================= TOP BAR ================= -->
+<header class="topbar" id="topbar">
+  <div class="brand">
+    <svg class="brand-icon" viewBox="0 0 32 32" width="28" height="28">
+      <path d="M16 2 L9 9 L16 16 L23 9 Z" fill="#e8c547"/>
+      <circle cx="16" cy="22" r="6" fill="#e8c547"/>
+      <rect x="10" y="26" width="12" height="4" rx="1" fill="#e8c547"/>
+    </svg>
+    <span class="brand-name">Chess<span>X</span></span>
+    <span class="brand-tag">Teaching Studio</span>
+  </div>
+
+  <nav class="topbar-actions">
+    <button class="btn-ghost" id="btnFlip" title="Flip Board (F)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 12l4-4M3 12l4 4M21 12l-4-4M21 12l-4 4"/></svg><span>Flip</span></button>
+    <button class="btn-ghost" id="btnReset" title="Reset (R)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg><span>Reset</span></button>
+    <button class="btn-ghost" id="btnUndo" title="Undo (Ctrl+Z)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 14l-4-4 4-4"/><path d="M5 10h11a4 4 0 0 1 0 8h-4"/></svg><span>Undo</span></button>
+    <button class="btn-ghost" id="btnRedo" title="Redo (Ctrl+Y)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 14l4-4-4-4"/><path d="M19 10H8a4 4 0 0 0 0 8h4"/></svg><span>Redo</span></button>
+    <button class="btn-ghost" id="btnFullscreen" title="Fullscreen"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8V3h5M21 8V3h-5M3 16v5h5M21 16v5h-5"/></svg><span>Full</span></button>
+
+    <div class="divider"></div>
+
+    <div class="layout-switch">
+      <button class="layout-btn active" data-layout="board" title="Board Only">▣</button>
+      <button class="layout-btn" data-layout="moves" title="Board + Moves">▤</button>
+      <button class="layout-btn" data-layout="explain" title="Board + Notes">▥</button>
+      <button class="layout-btn" data-layout="present" title="Presentation">▢</button>
+    </div>
+
+    <div class="divider"></div>
+
+    <button class="btn-record" id="btnRecordMode" title="Recording Mode">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+      <span>RECORDING MODE</span>
+    </button>
+  </nav>
+</header>
+
+<!-- ================= LESSON TITLE ================= -->
+<section class="lesson-header" id="lessonHeader">
+  <input type="text" class="lesson-title" id="lessonTitle" placeholder="Lesson Title (e.g. How to Play the Italian Game)" />
+  <input type="text" class="lesson-subtitle" id="lessonSubtitle" placeholder="Subtitle (e.g. Understanding the Main Ideas)" />
+  <button class="btn-icon" id="btnToggleTitle" title="Hide Title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+</section>
+
+<!-- ================= MAIN LAYOUT ================= -->
+<main class="layout" id="layout">
+
+  <!-- LEFT SIDEBAR: Teaching Tools -->
+  <aside class="sidebar sidebar-left" id="leftSidebar">
+    <div class="panel">
+      <div class="panel-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
+        Drawing Tools
+      </div>
+      <div class="tool-grid">
+        <button class="tool-btn active" data-tool="select" title="Select / Move Pieces (V)">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 3l14 8-6 2-2 6z"/></svg>
+          <span>Select</span>
+        </button>
+        <button class="tool-btn" data-tool="arrow" title="Arrow (A)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 20 L20 4 M14 4 H20 V10" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Arrow</span>
+        </button>
+        <button class="tool-btn" data-tool="circle" title="Circle (C)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="8"/></svg>
+          <span>Circle</span>
+        </button>
+        <button class="tool-btn" data-tool="highlight" title="Highlight (H)">
+          <svg viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+          <span>Highlight</span>
+        </button>
+        <button class="tool-btn" data-tool="rectangle" title="Rectangle (R)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="4" y="4" width="16" height="16"/></svg>
+          <span>Rect</span>
+        </button>
+        <button class="tool-btn" data-tool="eraser" title="Eraser (E)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 20H7L3 16l9-9 9 9-5 5"/><line x1="18" y1="13" x2="9" y2="22"/></svg>
+          <span>Eraser</span>
+        </button>
+      </div>
+      <div class="color-row">
+        <span class="color-label">Color</span>
+        <button class="color-dot active" style="--c:#ef4444" data-color="#ef4444" title="Red"></button>
+        <button class="color-dot" style="--c:#22c55e" data-color="#22c55e" title="Green"></button>
+        <button class="color-dot" style="--c:#3b82f6" data-color="#3b82f6" title="Blue"></button>
+        <button class="color-dot" style="--c:#eab308" data-color="#eab308" title="Yellow"></button>
+        <button class="color-dot" style="--c:#f97316" data-color="#f97316" title="Orange"></button>
+        <button class="color-dot" style="--c:#a855f7" data-color="#a855f7" title="Purple"></button>
+        <button class="color-dot" style="--c:#ffffff" data-color="#ffffff" title="White"></button>
+      </div>
+      <button class="btn-danger-full" id="btnClearAnnotations">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
+        Clear Annotations
+      </button>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        Position Setup
+      </div>
+      <div class="position-editor">
+        <div class="piece-rack" id="pieceRack">
+          <!-- Filled by JS -->
+        </div>
+        <div class="pos-controls">
+          <label class="checkbox-row"><input type="checkbox" id="optWhiteCastleK"> <span>White O-O</span></label>
+          <label class="checkbox-row"><input type="checkbox" id="optWhiteCastleQ"> <span>White O-O-O</span></label>
+          <label class="checkbox-row"><input type="checkbox" id="optBlackCastleK"> <span>Black O-O</span></label>
+          <label class="checkbox-row"><input type="checkbox" id="optBlackCastleQ"> <span>Black O-O-O</span></label>
+          <div class="row">
+            <span class="small-label">Side to move</span>
+            <select id="optSideToMove">
+              <option value="w">White</option>
+              <option value="b">Black</option>
+            </select>
+          </div>
+          <button class="btn-primary-full" id="btnStartFromPosition">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            START FROM POSITION
+          </button>
+          <button class="btn-ghost-full" id="btnClearBoard">Clear Board</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+        FEN
+      </div>
+      <textarea id="fenInput" rows="2" placeholder="Paste FEN..."></textarea>
+      <div class="row">
+        <button class="btn-ghost-full" id="btnLoadFen">Load FEN</button>
+        <button class="btn-ghost-full" id="btnCopyFen">Copy</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+        Bookmarks
+      </div>
+      <div id="bookmarkList" class="bookmark-list"></div>
+      <div class="row">
+        <button class="btn-ghost-full" id="btnPrevBookmark" title="Previous (P)">← Prev</button>
+        <button class="btn-ghost-full" id="btnNextBookmark" title="Next (N)">Next →</button>
+      </div>
+      <button class="btn-primary-full" id="btnSaveBookmark">+ Save Position</button>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        Themes
+      </div>
+      <div class="theme-grid" id="themeGrid">
+        <button class="theme-btn active" data-theme="classic" title="Classic">
+          <div class="theme-preview">
+            <div class="t-light"></div><div class="t-dark"></div>
+            <div class="t-light"></div><div class="t-dark"></div>
+          </div>
+          <span>Classic</span>
+        </button>
+        <button class="theme-btn" data-theme="tournament" title="Tournament">
+          <div class="theme-preview">
+            <div class="t-light" style="background:#f0d9b5"></div><div class="t-dark" style="background:#b58863"></div>
+            <div class="t-light" style="background:#f0d9b5"></div><div class="t-dark" style="background:#b58863"></div>
+          </div>
+          <span>Tournament</span>
+        </button>
+        <button class="theme-btn" data-theme="wooden" title="Wooden">
+          <div class="theme-preview">
+            <div class="t-light" style="background:#eedab9"></div><div class="t-dark" style="background:#7a4f2a"></div>
+            <div class="t-light" style="background:#eedab9"></div><div class="t-dark" style="background:#7a4f2a"></div>
+          </div>
+          <span>Wooden</span>
+        </button>
+        <button class="theme-btn" data-theme="dark" title="Dark">
+          <div class="theme-preview">
+            <div class="t-light" style="background:#4a5568"></div><div class="t-dark" style="background:#1a202c"></div>
+            <div class="t-light" style="background:#4a5568"></div><div class="t-dark" style="background:#1a202c"></div>
+          </div>
+          <span>Dark</span>
+        </button>
+        <button class="theme-btn" data-theme="minimal" title="Minimal">
+          <div class="theme-preview">
+            <div class="t-light" style="background:#ffffff"></div><div class="t-dark" style="background:#e5e5e5"></div>
+            <div class="t-light" style="background:#ffffff"></div><div class="t-dark" style="background:#e5e5e5"></div>
+          </div>
+          <span>Minimal</span>
+        </button>
+        <button class="theme-btn" data-theme="green" title="Green">
+          <div class="theme-preview">
+            <div class="t-light" style="background:#ebecd0"></div><div class="t-dark" style="background:#739552"></div>
+            <div class="t-light" style="background:#ebecd0"></div><div class="t-dark" style="background:#739552"></div>
+          </div>
+          <span>Green</span>
+        </button>
+      </div>
+      <div class="row">
+        <span class="small-label">Pieces</span>
+        <select id="pieceStyle">
+          <option value="alpha">Alpha</option>
+          <option value="merida">Merida</option>
+          <option value="classic">Classic</option>
+        </select>
+      </div>
+    </div>
+  </aside>
+
+  <!-- CENTER: BOARD AREA -->
+  <section class="board-area" id="boardArea">
+    <div class="board-wrapper" id="boardWrapper">
+      <div class="board-meta-top" id="boardMetaTop">
+        <div class="player-info">
+          <div class="player-flag" id="playerTop"></div>
+          <div class="player-name" id="playerTopName">Black</div>
+          <div class="captured" id="capturedTop"></div>
+        </div>
+      </div>
+
+      <div class="board-container" id="boardContainer">
+        <div class="board" id="board"></div>
+        <svg class="board-svg" id="boardSvg" xmlns="http://www.w3.org/2000/svg"></svg>
+      </div>
+
+      <div class="board-meta-bottom">
+        <div class="player-info">
+          <div class="player-flag" id="playerBottom"></div>
+          <div class="player-name" id="playerBottomName">White</div>
+          <div class="captured" id="capturedBottom"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Puzzle Overlay -->
+    <div class="puzzle-overlay hidden" id="puzzleOverlay">
+      <div class="puzzle-card">
+        <div class="puzzle-title">YOUR MOVE?</div>
+        <div class="puzzle-question" id="puzzleQuestion">What should White play here?</div>
+        <button class="btn-primary-full" id="btnRevealAnswer">REVEAL ANSWER</button>
+        <div class="puzzle-answer hidden" id="puzzleAnswer">
+          <div class="puzzle-answer-label">Answer</div>
+          <div class="puzzle-answer-move" id="puzzleAnswerMove">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Zoom Controls -->
+    <div class="zoom-controls" id="zoomControls">
+      <button class="zoom-btn" id="btnZoomOut" title="Zoom Out">−</button>
+      <span class="zoom-level" id="zoomLevel">100%</span>
+      <button class="zoom-btn" id="btnZoomIn" title="Zoom In">+</button>
+    </div>
+  </section>
+
+  <!-- RIGHT SIDEBAR -->
+  <aside class="sidebar sidebar-right" id="rightSidebar">
+
+    <!-- Stockfish Engine -->
+    <div class="panel" id="enginePanel">
+      <div class="panel-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        Stockfish Analysis
+        <button class="btn-icon-mini" id="btnHideEngine" title="Hide Engine">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><line x1="2" y1="2" x2="22" y2="22"/></svg>
+        </button>
+      </div>
+
+      <div class="engine-display" id="engineDisplay">
+        <div class="engine-eval">
+          <div class="eval-label">Evaluation</div>
+          <div class="eval-value" id="evalValue">+0.0</div>
+        </div>
+        <div class="engine-bar">
+          <div class="bar-white" id="barWhite" style="width:50%"></div>
+          <div class="bar-black" id="barBlack" style="width:50%"></div>
+        </div>
+        <div class="engine-info">
+          <div class="info-row"><span>Best Move</span><strong id="bestMove">—</strong></div>
+          <div class="info-row"><span>Depth</span><strong id="depth">0</strong></div>
+          <div class="info-row"><span>Nodes</span><strong id="nodes">0</strong></div>
+          <div class="info-row"><span>Status</span><strong id="engineStatus">Idle</strong></div>
+        </div>
+        <div class="pv-list">
+          <div class="pv-title">Principal Variation</div>
+          <div class="pv-moves" id="pvMoves">—</div>
+        </div>
+        <div class="multipv" id="multipv"></div>
+        <div class="row">
+          <button class="btn-ghost-full" id="btnEngineToggle">Start Analysis</button>
+        </div>
+        <div class="row">
+          <span class="small-label">Depth</span>
+          <select id="engineDepth">
+            <option value="10">10</option>
+            <option value="15" selected>15</option>
+            <option value="20">20</option>
+            <option value="25">25</option>
+          </select>
+          <span class="small-label">Multi-PV</span>
+          <select id="engineMultiPV">
+            <option value="1" selected>1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Move List -->
+    <div class="panel" id="movePanel">
+      <div class="panel-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+        Move List
+      </div>
+      <div class="moves-wrapper">
+        <div class="moves-list" id="movesList"></div>
+      </div>
+      <div class="row">
+        <button class="btn-ghost-full" id="btnPrevMove" title="Previous (←)">← Prev</button>
+        <button class="btn-ghost-full" id="btnNextMove" title="Next (→)">Next →</button>
+      </div>
+      <div class="row">
+        <button class="btn-ghost-full" id="btnAddVariation" title="Add Variation">+ Variation</button>
+        <button class="btn-ghost-full" id="btnDeleteMove">Delete Move</button>
+      </div>
+    </div>
+
+    <!-- Teacher Notes -->
+    <div class="panel" id="notesPanel">
+      <div class="panel-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        Teacher Notes
+        <button class="btn-icon-mini" id="btnToggleNotes" title="Hide Notes">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><line x1="2" y1="2" x2="22" y2="22"/></svg>
+        </button>
+      </div>
+      <textarea id="teacherNotes" placeholder="Write your lesson explanations here...&#10;&#10;e.g.&#10;White wants to control the center.&#10;Knight attacks e5.&#10;Black should castle."></textarea>
+    </div>
+
+    <!-- Chess Clock -->
+    <div class="panel" id="clockPanel">
+      <div class="panel-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Chess Clock
+        <button class="btn-icon-mini" id="btnToggleClock" title="Hide Clock">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><line x1="2" y1="2" x2="22" y2="22"/></svg>
+        </button>
+      </div>
+      <div class="clocks">
+        <div class="clock" id="clockBlack">
+          <div class="clock-time">10:00</div>
+          <div class="clock-name">Black</div>
+        </div>
+        <div class="clock" id="clockWhite">
+          <div class="clock-time">10:00</div>
+          <div class="clock-name">White</div>
+        </div>
+      </div>
+      <div class="row">
+        <button class="btn-ghost-full" data-clock="blitz" data-time="180">Blitz 3:00</button>
+        <button class="btn-ghost-full" data-clock="rapid" data-time="600">Rapid 10:00</button>
+        <button class="btn-ghost-full" data-clock="classical" data-time="1800">Classical 30:00</button>
+      </div>
+      <div class="row">
+        <input type="number" id="clockCustom" placeholder="Min" min="1" value="10">
+        <button class="btn-ghost-full" id="btnSetCustomClock">Set</button>
+      </div>
+      <div class="row">
+        <button class="btn-primary-full" id="btnClockToggle">Start Clock</button>
+      </div>
+    </div>
+
+    <!-- Puzzle Mode -->
+    <div class="panel" id="puzzlePanel">
+      <div class="panel-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r=".5"/></svg>
+        Puzzle / Question
+      </div>
+      <input type="text" id="puzzleInput" placeholder="Question (e.g. What should White play?)" />
+      <button class="btn-primary-full" id="btnCreatePuzzle">Create Question</button>
+      <button class="btn-ghost-full" id="btnClosePuzzle">Close Question</button>
+    </div>
+
+    <!-- Lesson Save/Load -->
+    <div class="panel" id="lessonPanel">
+      <div class="panel-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        Lesson
+      </div>
+      <div class="row">
+        <button class="btn-primary-full" id="btnSaveLesson">Save Lesson</button>
+        <button class="btn-ghost-full" id="btnLoadLesson">Load</button>
+      </div>
+      <div class="row">
+        <button class="btn-ghost-full" id="btnExportPgn">Export PGN</button>
+        <button class="btn-ghost-full" id="btnImportLesson">Import</button>
+      </div>
+      <input type="file" id="fileInput" accept=".json,.pgn" style="display:none" />
+    </div>
+  </aside>
+</main>
+
+<!-- ================= RECORDING MODE CONTROLS ================= -->
+<div class="recording-bar hidden" id="recordingBar">
+  <div class="rec-indicator">
+    <div class="rec-dot"></div>
+    <span>RECORDING MODE</span>
+  </div>
+  <div class="rec-timer" id="recTimer">00:00</div>
+  <div class="rec-actions">
+    <button class="rec-btn" id="btnToggleMic" title="Microphone">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
+      <span>Mic</span>
+    </button>
+    <button class="rec-btn" id="btnToggleUi" title="Hide UI (H)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+      <span>Hide UI</span>
+    </button>
+    <button class="rec-btn rec-btn-danger" id="btnExitRecMode">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      <span>EXIT</span>
+    </button>
+  </div>
+</div>
+
+<!-- ================= NOTIFICATION ================= -->
+<div class="toast" id="toast"></div>
+
+<!-- ================= HIDDEN VIDEO RECORDING ================= -->
+<video id="recPreview" autoplay muted playsinline style="display:none"></video>
+<div class="rec-preview-bar hidden" id="recPreviewBar">
+  <div class="rec-status">
+    <div class="rec-dot"></div>
+    <span id="recStatusText">Recording...</span>
+    <span id="recLiveTimer">00:00</span>
+  </div>
+  <div class="rec-preview-actions">
+    <button class="rec-btn" id="btnPauseRec">Pause</button>
+    <button class="rec-btn rec-btn-danger" id="btnStopRec">Stop</button>
+  </div>
+</div>
+
+<!-- Modal for recorded video -->
+<div class="modal hidden" id="videoModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Recording Complete</h3>
+      <button class="btn-icon" id="btnCloseModal">✕</button>
+    </div>
+    <video id="recordedVideo" controls style="width:100%; border-radius:8px;"></video>
+    <div class="modal-actions">
+      <button class="btn-primary-full" id="btnDownloadRec">Download Video</button>
+      <button class="btn-ghost-full" id="btnDiscardRec">Discard</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirmation Modal for OBS -->
+<div class="modal hidden" id="obsModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Screen Recording Not Available</h3>
+      <button class="btn-icon" id="btnCloseObsModal">✕</button>
+    </div>
+    <p style="color:var(--text-secondary); line-height:1.7; margin: 12px 0;">
+      Your browser does not allow direct screen recording, or you declined permission.
+      For the best recording quality, we recommend using <strong>OBS Studio</strong> (free) or your OS's built-in screen recorder.
+    </p>
+    <div style="background:var(--bg-tertiary); padding:14px; border-radius:8px; margin:12px 0; font-size:13px; color:var(--text-secondary);">
+      <strong style="color:var(--text-primary)">Quick OBS setup:</strong><br>
+      1. Open OBS Studio → Sources → + → Window Capture<br>
+      2. Select this browser tab<br>
+      3. Enable Audio → Desktop Audio (to capture your mic)<br>
+      4. Click "Start Recording"
+    </div>
+    <button class="btn-primary-full" id="btnCloseObsOk">Got it</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chess.js@1.0.0-beta.8/chess.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/stockfish@16.1.0/stockfish.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
