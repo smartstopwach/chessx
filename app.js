@@ -27,7 +27,7 @@ const PIECE_FONT = {
 // STATE
 // ============================================
 const state = {
-  game: new Chess(),
+  game: (typeof Chess !== 'undefined') ? new Chess() : { board: () => Array(8).fill(null).map(()=>Array(8).fill(null)), history: ()=>[], moves: ()=>[], fen: ()=>'', in_check: ()=>false, turn: ()=>'w', move: ()=>null, undo: ()=>null, reset: ()=>null, pgn: ()=>'', load: ()=>null, load_pgn: ()=>null },
   history: [],
   historyIndex: -1,
   position: { fen: '' },
@@ -135,7 +135,13 @@ function showSquare(name) {
 // ============================================
 function renderBoard() {
   els.board.innerHTML = '';
-  const board = state.game.board();
+  let board;
+  try {
+    board = state.game.board();
+  } catch (e) {
+    console.error('Chess.js not loaded:', e);
+    board = Array(8).fill(null).map(() => Array(8).fill(null));
+  }
 
   for (let r = 0; r < 8; r++) {
     for (let c = 0; c < 8; c++) {
@@ -900,21 +906,19 @@ function setLayout(layout) {
 // ============================================
 function initEngine() {
   try {
-    if (typeof Stockfish === 'undefined') {
+    if (typeof StockfishEngine === 'undefined') {
       $('engineStatus').textContent = 'Unavailable';
       return;
     }
-    state.engine.stockfish = new Stockfish();
-    state.engine.stockfish.onmessage = (line) => {
-      handleEngineMessage(line);
-    };
-    state.engine.stockfish.postMessage('uci');
-    state.engine.stockfish.postMessage('isready');
+    state.engine.stockfish = new StockfishEngine();
+    state.engine.stockfish.init();
+    state.engine.stockfish.onMessage((line) => handleEngineMessage(line));
     $('engineStatus').textContent = 'Ready';
   } catch (e) {
+    console.error(e);
     $('engineStatus').textContent = 'Unavailable';
   }
-}
+}</old_text>
 
 function handleEngineMessage(line) {
   if (typeof line !== 'string') return;
@@ -999,9 +1003,9 @@ function renderMultiPV() {
 function requestEngineEval() {
   if (!state.engine.enabled || !state.engine.stockfish) return;
   state.engine.evaluating = true;
-  state.engine.stockfish.postMessage('stop');
-  state.engine.stockfish.postMessage(`position fen ${state.game.fen()}`);
-  state.engine.stockfish.postMessage(`go depth ${state.engine.depth}`);
+  state.engine.stockfish.stop();
+  state.engine.stockfish.setPosition(state.game.fen());
+  state.engine.stockfish.go(state.engine.depth);
   $('engineStatus').textContent = 'Analyzing...';
 }
 
@@ -1013,7 +1017,7 @@ function toggleEngine() {
     requestEngineEval();
   } else {
     btn.textContent = 'Start Analysis';
-    if (state.engine.stockfish) state.engine.stockfish.postMessage('stop');
+    if (state.engine.stockfish) state.engine.stockfish.stop();
     $('engineStatus').textContent = 'Idle';
   }
 }
@@ -1031,10 +1035,10 @@ function setEngineDepth(d) {
 function setEngineMultiPV(n) {
   state.engine.multipv = parseInt(n);
   if (state.engine.stockfish) {
-    state.engine.stockfish.postMessage(`setoption name MultiPV value ${n}`);
+    state.engine.stockfish.setMultiPV(n);
     if (state.engine.enabled) requestEngineEval();
   }
-}
+}</old_text>
 
 // ============================================
 // ZOOM
@@ -1074,16 +1078,18 @@ function createPuzzle() {
   // Compute best move
   let answer = 'Unknown';
   if (state.engine.stockfish) {
-    state.engine.stockfish.postMessage('stop');
-    state.engine.stockfish.postMessage(`position fen ${state.game.fen()}`);
-    state.engine.stockfish.postMessage('go depth 12');
+    state.engine.stockfish.stop();
+    state.engine.stockfish.setPosition(state.game.fen());
+    state.engine.stockfish.go(12);
     setTimeout(() => {
       if (state.engine.bestMove) {
-        const m = state.game.move({ from: state.engine.bestMove.substring(0,2), to: state.engine.bestMove.substring(2,4) });
-        if (m) {
-          answer = m.san;
-          state.game.undo();
-        }
+        try {
+          const m = state.game.move({ from: state.engine.bestMove.substring(0,2), to: state.engine.bestMove.substring(2,4), promotion: 'q' });
+          if (m) {
+            answer = m.san;
+            state.game.undo();
+          }
+        } catch (e) {}
       }
       $('puzzleAnswerMove').textContent = answer;
     }, 1500);

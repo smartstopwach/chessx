@@ -742,10 +742,15 @@ textarea {
   position: relative;
   width: var(--board-size, 640px);
   height: var(--board-size, 640px);
+  min-width: 400px;
+  min-height: 400px;
+  max-width: 90vmin;
+  max-height: 90vmin;
+  aspect-ratio: 1;
   border: 3px solid var(--board-border);
   border-radius: 4px;
   box-shadow: var(--shadow-lg);
-  background: var(--bg-primary);
+  background: #739552;
   overflow: hidden;
 }
 
