@@ -1071,7 +1071,7 @@ function autoFitBoard() {
 
   // Available space inside wrapper (account for player-info rows above/below)
   const availW = wrapper.clientWidth - 24; // small padding buffer
-  const availH = wrapper.clientHeight - 80; // player info rows ~70px total
+  const availH = wrapper.clientHeight - 40; // minimal buffer for player info rows
 
   // Pick the smaller to keep square, then clamp to [320, 1100]
   const size = Math.max(320, Math.min(1100, Math.min(availW, availH)));
