@@ -179,13 +179,10 @@ function renderBoard() {
       // Piece
       const piece = board[r][c];
       if (piece) {
+        const key = piece.color === 'w' ? piece.type.toUpperCase() : piece.type;
         const p = document.createElement('div');
         p.className = 'piece';
-        p.textContent = PIECE_FONT[piece.color === 'w' ? piece.type.toUpperCase() : piece.type];
-        p.style.color = piece.color === 'w' ? '#ffffff' : '#1a1a1a';
-        p.style.textShadow = piece.color === 'w'
-          ? '0 0 2px #000, 0 2px 4px rgba(0,0,0,0.5)'
-          : '0 0 2px #fff, 0 2px 4px rgba(0,0,0,0.3)';
+        p.innerHTML = PIECE_SVG[key];
         sq.appendChild(p);
       }
 
@@ -533,11 +530,7 @@ function initPieceRack() {
     const div = document.createElement('div');
     div.className = 'rack-piece';
     div.dataset.piece = p;
-    div.textContent = PIECE_FONT[p];
-    div.style.color = p === p.toUpperCase() ? '#ffffff' : '#1a1a1a';
-    div.style.textShadow = p === p.toUpperCase()
-      ? '0 0 2px #000'
-      : '0 0 2px #fff';
+    div.innerHTML = PIECE_SVG[p];
     div.addEventListener('click', () => {
       $$('.rack-piece').forEach(x => x.classList.remove('selected'));
       div.classList.add('selected');
