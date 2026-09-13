@@ -723,6 +723,7 @@ textarea {
   overflow: hidden;
   flex-shrink: 1;
   aspect-ratio: 1 / 1;
+}
 
 .board {
   display: grid;
