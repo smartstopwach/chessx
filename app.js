@@ -936,7 +936,7 @@ function setLayout(layout) {
   state.layout = layout;
   els.layout.dataset.layout = layout;
   $$('.layout-btn').forEach(b => b.classList.toggle('active', b.dataset.layout === layout));
-  setTimeout(renderAnnotations, 50);
+  setTimeout(() => { renderAnnotations(); autoFitBoard(); }, 50);
 }
 
 // ============================================
@@ -1076,7 +1076,37 @@ function setZoom(z) {
   const inn = $('btnZoomIn');
   if (out) out.disabled = state.zoom <= 0.6;
   if (inn) inn.disabled = state.zoom >= 1.6;
-  setTimeout(renderAnnotations, 50);
+  setTimeout(() => { renderAnnotations(); autoFitBoard(); }, 50);
+}
+
+// Auto-fit board to fill the available space in board-area (always square)
+function autoFitBoard() {
+  const wrapper = document.getElementById('boardWrapper');
+  const boardContainer = document.getElementById('boardContainer');
+  if (!wrapper || !boardContainer) return;
+
+  const cs = window.getComputedStyle(wrapper);
+  // Available space inside wrapper (account for player-info rows above/below)
+  const availW = wrapper.clientWidth - 24; // small padding buffer
+  const availH = wrapper.clientHeight - 80; // player info rows ~70px total
+
+  // Pick the smaller to keep square, then clamp to [320, 1000]
+  let size = Math.max(320, Math.min(1000, Math.min(availW, availH)));
+
+  // Don't override user-set zoom unless they haven't manually changed it,
+  // OR if the current zoom would make board too big/small for available space
+  const currentSize = Math.round(640 * state.zoom);
+  // If the auto-fit size differs significantly from current, snap to it
+  if (Math.abs(size - currentSize) > 20) {
+    const zoom = size / 640;
+    state.zoom = Math.max(0.6, Math.min(1.6, zoom));
+    const finalSize = Math.round(640 * state.zoom);
+    boardContainer.style.setProperty('--board-size', finalSize + 'px');
+    if ($('zoomLevel')) {
+      $('zoomLevel').textContent = Math.round(state.zoom * 100) + '%';
+    }
+  }
+  setTimeout(() => { renderAnnotations(); autoFitBoard(); }, 50);
 }
 
 // ============================================
@@ -1353,7 +1383,8 @@ function bindEvents() {
   $('btnZoomReset').addEventListener('click', () => setZoom(1));
 
 
-  window.addEventListener('resize', () => renderAnnotations());
+  window.addEventListener('resize', () => { autoFitBoard(); renderAnnotations(); });
+  setTimeout(autoFitBoard, 200);
 
   els.board.addEventListener('click', () => {
     if (state.clock.running) setTimeout(switchClockSide, 100);
