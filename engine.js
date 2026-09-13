@@ -6,26 +6,33 @@ class StockfishEngine {
     this.worker = null;
     this.ready = false;
     this.listeners = [];
+    this.failed = false;
   }
 
   init() {
-    if (this.worker) return;
+    if (this.worker || this.failed) return;
     try {
       // Load stockfish.js as a web worker - use local file to avoid CORS
+      // The worker tries to load WASM files which need to be served with proper MIME types
       this.worker = new Worker('stockfish-worker.js');
       this.worker.onmessage = (e) => this._handle(e.data);
       this.worker.onerror = (e) => {
         console.error('Stockfish worker error:', e);
+        this.failed = true;
+        if (this.worker) { this.worker.terminate(); this.worker = null; }
       };
       this.postMessage('uci');
       this.postMessage('isready');
     } catch (err) {
-      console.error('Stockfish init failed:', err);
+      console.warn('Stockfish unavailable:', err.message || err);
+      this.failed = true;
     }
   }
 
   postMessage(cmd) {
-    if (this.worker) this.worker.postMessage(cmd);
+    try {
+      if (this.worker) this.worker.postMessage(cmd);
+    } catch (e) { this.failed = true; }
   }
 
   onMessage(fn) {

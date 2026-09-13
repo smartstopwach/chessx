@@ -919,11 +919,11 @@ function initEngine() {
       return;
     }
     state.engine.stockfish = new StockfishEngine();
-    state.engine.stockfish.init();
     state.engine.stockfish.onMessage((line) => handleEngineMessage(line));
+    state.engine.stockfish.init();
     $('engineStatus').textContent = 'Ready';
   } catch (e) {
-    console.error(e);
+    console.warn('Engine init:', e.message || e);
     $('engineStatus').textContent = 'Unavailable';
   }
 }
@@ -1477,22 +1477,38 @@ function init() {
     console.warn('Chess.js not loaded yet, retrying...');
     setTimeout(() => {
       state.game = createGame();
-      try { doInit(); } catch (e) { console.error(e); }
+      doInit();
     }, 100);
     return;
   }
-  try { doInit(); } catch (e) { console.error('Init error:', e); }
+  doInit();
+}
+
+function safeCall(name, fn) {
+  try { fn(); } catch (e) { console.error(name + ' failed:', e); }
 }
 
 function doInit() {
-  initPieceRack();
-  bindEvents();
-  initEngine();
-  updateFen();
-  renderAll();
-  updateClocks();
-  autoLoadLesson();
+  // CRITICAL: render the board FIRST so user sees something even if other things fail
+  safeCall('renderBoard', renderBoard);
+  safeCall('updateFen', updateFen);
+
+  // Then do the rest independently
+  safeCall('initPieceRack', initPieceRack);
+  safeCall('bindEvents', bindEvents);
+
+  // Try to init engine, but don't block the rest
+  setTimeout(() => safeCall('initEngine', initEngine), 50);
+
+  safeCall('updateClocks', updateClocks);
+  safeCall('autoLoadLesson', autoLoadLesson);
+
   console.log('ChessX initialized successfully');
 }
 
-document.addEventListener('DOMContentLoaded', init);
+// Fallback: if DOMContentLoaded already fired (script loaded late), init immediately
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
