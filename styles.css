@@ -283,7 +283,7 @@ body.title-hidden .lesson-header { display: none; }
 
 .layout[data-layout="present"] { grid-template-columns: 0 1fr 0; padding: 4px; }
 .layout[data-layout="present"] .sidebar { display: none; }
-.layout[data-layout="present"] .lesson-header { display: none; }</old_text>
+.layout[data-layout="present"] .lesson-header { display: none; }
 
 /* ============================================
    SIDEBARS
