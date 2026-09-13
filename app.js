@@ -26,8 +26,33 @@ const PIECE_FONT = {
 // ============================================
 // STATE
 // ============================================
+// Chess.js might not have loaded yet — wait and retry
+function createGame() {
+  if (typeof Chess !== 'undefined') {
+    try { return new Chess(); } catch (e) {}
+  }
+  // Fallback stub
+  return {
+    _board: Array(8).fill(null).map(()=>Array(8).fill(null)),
+    _turn: 'w',
+    _history: [],
+    board() { return this._board; },
+    history() { return []; },
+    moves() { return []; },
+    fen() { return '8/8/8/8/8/8/8/8 w - - 0 1'; },
+    in_check() { return false; },
+    turn() { return 'w'; },
+    move() { return null; },
+    undo() { return null; },
+    reset() {},
+    pgn() { return ''; },
+    load() { return null; },
+    load_pgn() { return null; }
+  };
+}
+
 const state = {
-  game: new Chess(),
+  game: createGame(),
   history: [],
   historyIndex: -1,
   position: { fen: '' },
@@ -1507,6 +1532,19 @@ function bindEvents() {
 // INITIALIZATION
 // ============================================
 function init() {
+  // Wait a tick if Chess isn't loaded yet
+  if (typeof Chess === 'undefined') {
+    console.warn('Chess.js not loaded yet, retrying...');
+    setTimeout(() => {
+      state.game = createGame();
+      try { doInit(); } catch (e) { console.error(e); }
+    }, 100);
+    return;
+  }
+  try { doInit(); } catch (e) { console.error('Init error:', e); }
+}
+
+function doInit() {
   initPieceRack();
   bindEvents();
   initEngine();
@@ -1514,6 +1552,7 @@ function init() {
   renderAll();
   updateClocks();
   autoLoadLesson();
+  console.log('ChessX initialized successfully');
 }
 
 document.addEventListener('DOMContentLoaded', init);
