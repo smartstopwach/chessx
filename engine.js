@@ -11,8 +11,8 @@ class StockfishEngine {
   init() {
     if (this.worker) return;
     try {
-      // Load stockfish.js as a web worker
-      this.worker = new Worker('https://cdn.jsdelivr.net/npm/stockfish.js@10.0.2/stockfish.js');
+      // Load stockfish.js as a web worker - use local file to avoid CORS
+      this.worker = new Worker('stockfish-worker.js');
       this.worker.onmessage = (e) => this._handle(e.data);
       this.worker.onerror = (e) => {
         console.error('Stockfish worker error:', e);

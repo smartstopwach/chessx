@@ -2,22 +2,7 @@
    ChessX — Professional Chess Teaching Studio
    ============================================ */
 
-const PIECES = {
-  alpha: {
-    'P': '♙', 'N': '♘', 'B': '♗', 'R': '♖', 'Q': '♕', 'K': '♔',
-    'p': '♟', 'n': '♞', 'b': '♝', 'r': '♜', 'q': '♛', 'k': '♚'
-  },
-  merida: {
-    'P': '♙', 'N': '♘', 'B': '♗', 'R': '♖', 'Q': '♕', 'K': '♔',
-    'p': '♟', 'n': '♞', 'b': '♝', 'r': '♜', 'q': '♛', 'k': '♚'
-  },
-  classic: {
-    'P': '♙', 'N': '♘', 'B': '♗', 'R': '♖', 'Q': '♕', 'K': '♔',
-    'p': '♟', 'n': '♞', 'b': '♝', 'r': '♜', 'q': '♛', 'k': '♚'
-  }
-};
-
-// Use high-quality unicode chess pieces (rendered as text with font)
+// Use high-quality unicode chess pieces (for fallback)
 const PIECE_FONT = {
   'P': '♙', 'N': '♘', 'B': '♗', 'R': '♖', 'Q': '♕', 'K': '♔',
   'p': '♟', 'n': '♞', 'b': '♝', 'r': '♜', 'q': '♛', 'k': '♚'
@@ -26,7 +11,6 @@ const PIECE_FONT = {
 // ============================================
 // STATE
 // ============================================
-// Chess.js might not have loaded yet — wait and retry
 function createGame() {
   if (typeof Chess !== 'undefined') {
     try { return new Chess(); } catch (e) {}
@@ -47,7 +31,8 @@ function createGame() {
     reset() {},
     pgn() { return ''; },
     load() { return null; },
-    load_pgn() { return null; }
+    load_pgn() { return null; },
+    get() { return null; }
   };
 }
 
@@ -60,11 +45,11 @@ const state = {
   selectedSquare: null,
   currentTool: 'select',
   currentColor: '#ef4444',
-  annotations: [], // { type: 'arrow'|'circle'|'highlight'|'rect', squares: [], color }
-  arrows: [],      // { from, to, color }
-  circles: [],     // { square, color }
-  highlights: [],  // { square, color }
-  rectangles: [],  // { from, to, color }
+  annotations: [],
+  arrows: [],
+  circles: [],
+  highlights: [],
+  rectangles: [],
   drawingFrom: null,
   isDrawing: false,
   boardTheme: 'classic',
@@ -213,7 +198,12 @@ function renderBoard() {
         const key = piece.color === 'w' ? piece.type.toUpperCase() : piece.type;
         const p = document.createElement('div');
         p.className = 'piece';
-        p.innerHTML = PIECE_SVG[key];
+        if (typeof PIECE_SVG !== 'undefined' && PIECE_SVG[key]) {
+          p.innerHTML = PIECE_SVG[key];
+        } else {
+          p.textContent = PIECE_FONT[key];
+          p.style.color = piece.color === 'w' ? '#ffffff' : '#1a1a1a';
+        }
         sq.appendChild(p);
       }
 
@@ -231,54 +221,55 @@ function highlightSquares() {
   });
 
   // Last move
-  const history = state.game.history({ verbose: true });
-  if (history.length > 0 && state.historyIndex >= 0) {
-    const lastMove = history[state.historyIndex];
-    if (lastMove) {
-      const fromSq = showSquare(lastMove.from);
-      const toSq = showSquare(lastMove.to);
-      if (fromSq) fromSq.classList.add('last-move');
-      if (toSq) toSq.classList.add('last-move');
+  try {
+    const history = state.game.history({ verbose: true });
+    if (history.length > 0 && state.historyIndex >= 0 && state.historyIndex < history.length) {
+      const lastMove = history[state.historyIndex];
+      if (lastMove) {
+        const fromSq = showSquare(lastMove.from);
+        const toSq = showSquare(lastMove.to);
+        if (fromSq) fromSq.classList.add('last-move');
+        if (toSq) toSq.classList.add('last-move');
+      }
     }
-  }
+  } catch (e) {}
 
   // Check
-  if (state.game.in_check()) {
-    const turn = state.game.turn();
-    state.game.board().forEach((row, r) => {
-      row.forEach((p, c) => {
-        if (p && p.type === 'k' && p.color === turn) {
-          const sq = els.board.children[r * 8 + c];
-          if (sq) sq.classList.add('check');
-        }
+  try {
+    if (state.game.in_check()) {
+      const turn = state.game.turn();
+      state.game.board().forEach((row, r) => {
+        row.forEach((p, c) => {
+          if (p && p.type === 'k' && p.color === turn) {
+            const sq = els.board.children[r * 8 + c];
+            if (sq) sq.classList.add('check');
+          }
+        });
       });
-    });
-  }
+    }
+  } catch (e) {}
 
   // Selected square + legal moves
   if (state.selectedSquare) {
     const sel = showSquare(state.selectedSquare);
     if (sel) sel.classList.add('selected');
 
-    const moves = state.game.moves({ square: state.selectedSquare, verbose: true });
-    moves.forEach(m => {
-      const sq = showSquare(m.to);
-      if (!sq) return;
-      if (m.flags.includes('e') || m.flags.includes('c')) {
-        const dot = document.createElement('div');
-        dot.className = 'capture-dot';
-        sq.appendChild(dot);
-      } else {
-        const dot = document.createElement('div');
-        dot.className = 'move-dot';
-        sq.appendChild(dot);
-      }
-    });
-  }
-
-  // Setup mode - allow placing pieces
-  if (state.setupMode && state.selectedRackPiece) {
-    // Show ghost on hover (handled by mouseover)
+    try {
+      const moves = state.game.moves({ square: state.selectedSquare, verbose: true });
+      moves.forEach(m => {
+        const sq = showSquare(m.to);
+        if (!sq) return;
+        if (m.flags.includes('e') || m.flags.includes('c')) {
+          const dot = document.createElement('div');
+          dot.className = 'capture-dot';
+          sq.appendChild(dot);
+        } else {
+          const dot = document.createElement('div');
+          dot.className = 'move-dot';
+          sq.appendChild(dot);
+        }
+      });
+    } catch (e) {}
   }
 }
 
@@ -290,6 +281,7 @@ function renderAnnotations() {
   svg.innerHTML = '';
 
   const rect = els.boardContainer.getBoundingClientRect();
+  if (rect.width === 0) return;
   const sqSize = rect.width / 8;
   svg.setAttribute('viewBox', `0 0 ${rect.width} ${rect.height}`);
 
@@ -315,38 +307,38 @@ function renderAnnotations() {
   // Highlights
   state.highlights.forEach(h => {
     const p = sqTopLeft(h.square);
-    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-    rect.setAttribute('x', p.x);
-    rect.setAttribute('y', p.y);
-    rect.setAttribute('width', sqSize);
-    rect.setAttribute('height', sqSize);
-    rect.setAttribute('fill', h.color);
-    rect.setAttribute('class', 'highlight-sq');
-    rect.dataset.type = 'highlight';
-    rect.dataset.square = h.square;
-    svg.appendChild(rect);
+    const r = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    r.setAttribute('x', p.x);
+    r.setAttribute('y', p.y);
+    r.setAttribute('width', sqSize);
+    r.setAttribute('height', sqSize);
+    r.setAttribute('fill', h.color);
+    r.setAttribute('class', 'highlight-sq');
+    r.dataset.type = 'highlight';
+    r.dataset.square = h.square;
+    svg.appendChild(r);
   });
 
   // Rectangles
-  state.rectangles.forEach(r => {
-    const a = sqTopLeft(r.from);
-    const b = sqTopLeft(r.to);
+  state.rectangles.forEach(rc => {
+    const a = sqTopLeft(rc.from);
+    const b = sqTopLeft(rc.to);
     const x = Math.min(a.x, b.x);
     const y = Math.min(a.y, b.y);
     const w = Math.abs(a.x - b.x) + sqSize;
     const h2 = Math.abs(a.y - b.y) + sqSize;
-    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-    rect.setAttribute('x', x);
-    rect.setAttribute('y', y);
-    rect.setAttribute('width', w);
-    rect.setAttribute('height', h2);
-    rect.setAttribute('fill', r.color);
-    rect.setAttribute('fill-opacity', '0.3');
-    rect.setAttribute('stroke', r.color);
-    rect.setAttribute('stroke-width', '3');
-    rect.setAttribute('rx', '4');
-    rect.dataset.type = 'rectangle';
-    svg.appendChild(rect);
+    const r = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    r.setAttribute('x', x);
+    r.setAttribute('y', y);
+    r.setAttribute('width', w);
+    r.setAttribute('height', h2);
+    r.setAttribute('fill', rc.color);
+    r.setAttribute('fill-opacity', '0.3');
+    r.setAttribute('stroke', rc.color);
+    r.setAttribute('stroke-width', '3');
+    r.setAttribute('rx', '4');
+    r.dataset.type = 'rectangle';
+    svg.appendChild(r);
   });
 
   // Circles
@@ -371,10 +363,10 @@ function renderAnnotations() {
     const dx = to.x - from.x;
     const dy = to.y - from.y;
     const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist === 0) return;
     const ux = dx / dist;
     const uy = dy / dist;
 
-    // Start point: from center, but skip the piece area
     const startOffset = sqSize * 0.45;
     const endOffset = sqSize * 0.30;
     const sx = from.x + ux * startOffset;
@@ -382,10 +374,10 @@ function renderAnnotations() {
     const ex = to.x - ux * endOffset;
     const ey = to.y - uy * endOffset;
 
-    // Defs for arrowhead
     const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+    const colorHex = a.color.replace('#','');
     defs.innerHTML = `
-      <marker id="arrowhead-${a.color.replace('#','')}" markerWidth="4" markerHeight="4" refX="3" refY="2" orient="auto">
+      <marker id="arrowhead-${colorHex}" markerWidth="4" markerHeight="4" refX="3" refY="2" orient="auto">
         <polygon points="0 0, 4 2, 0 4" fill="${a.color}" />
       </marker>
     `;
@@ -399,7 +391,7 @@ function renderAnnotations() {
     line.setAttribute('stroke', a.color);
     line.setAttribute('stroke-width', '6');
     line.setAttribute('stroke-linecap', 'round');
-    line.setAttribute('marker-end', `url(#arrowhead-${a.color.replace('#','')})`);
+    line.setAttribute('marker-end', `url(#arrowhead-${colorHex})`);
     line.dataset.type = 'arrow';
     svg.appendChild(line);
   });
@@ -413,7 +405,6 @@ function onSquareMouseDown(e) {
   const sq = e.target.closest('.square');
   const sqName = sq.dataset.square;
 
-  // Setup mode
   if (state.setupMode && state.selectedRackPiece) {
     placePieceOnSetup(sqName);
     return;
@@ -450,12 +441,13 @@ function onSquareMouseDown(e) {
   if (state.selectedSquare) {
     tryMakeMove(state.selectedSquare, sqName);
   } else {
-    // Select piece
-    const piece = state.game.get(sqName);
-    if (piece && piece.color === state.game.turn()) {
-      state.selectedSquare = sqName;
-      highlightSquares();
-    }
+    try {
+      const piece = state.game.get(sqName);
+      if (piece && piece.color === state.game.turn()) {
+        state.selectedSquare = sqName;
+        highlightSquares();
+      }
+    } catch (e) {}
   }
 }
 
@@ -483,8 +475,6 @@ function tryMakeMove(from, to) {
     const result = state.game.move({ from, to, promotion: 'q' });
     if (result) {
       state.selectedSquare = null;
-      // Clear annotations on move
-      // state.arrows = []; state.circles = []; state.highlights = []; state.rectangles = [];
       state.historyIndex = state.game.history().length - 1;
       renderAll();
       requestEngineEval();
@@ -503,7 +493,6 @@ function addArrow(from, to) {
 }
 
 function addCircle(sq) {
-  // Toggle
   const idx = state.circles.findIndex(c => c.square === sq && c.color === state.currentColor);
   if (idx >= 0) state.circles.splice(idx, 1);
   else state.circles.push({ square: sq, color: state.currentColor });
@@ -523,11 +512,9 @@ function addRectangle(from, to) {
 }
 
 function eraseAnnotationAt(sq) {
-  // Erase annotations that touch this square
   state.arrows = state.arrows.filter(a => a.from !== sq && a.to !== sq);
   state.circles = state.circles.filter(c => c.square !== sq);
   state.highlights = state.highlights.filter(h => h.square !== sq);
-  // For rectangles, remove if any corner is the square
   state.rectangles = state.rectangles.filter(r => r.from !== sq && r.to !== sq);
   renderAnnotations();
 }
@@ -561,7 +548,12 @@ function initPieceRack() {
     const div = document.createElement('div');
     div.className = 'rack-piece';
     div.dataset.piece = p;
-    div.innerHTML = PIECE_SVG[p];
+    if (typeof PIECE_SVG !== 'undefined' && PIECE_SVG[p]) {
+      div.innerHTML = PIECE_SVG[p];
+    } else {
+      div.textContent = PIECE_FONT[p];
+      div.style.color = p === p.toUpperCase() ? '#ffffff' : '#1a1a1a';
+    }
     div.addEventListener('click', () => {
       $$('.rack-piece').forEach(x => x.classList.remove('selected'));
       div.classList.add('selected');
@@ -575,19 +567,18 @@ function initPieceRack() {
 
 function placePieceOnSetup(sq) {
   if (!state.selectedRackPiece) return;
-  // Get current FEN
-  const fen = state.game.fen();
-  const position = fen.split(' ')[0];
-  const rows = position.split('/');
-
-  const { r, c } = squareRC(sq);
-  const row = rows[r];
-  const expanded = expandRow(row);
-  expanded[c] = state.selectedRackPiece;
-  rows[r] = collapseRow(expanded);
-
-  const newFen = rows.join('/') + ' ' + fen.split(' ').slice(1).join(' ');
   try {
+    const fen = state.game.fen();
+    const position = fen.split(' ')[0];
+    const rows = position.split('/');
+
+    const { r, c } = squareRC(sq);
+    const row = rows[r];
+    const expanded = expandRow(row);
+    expanded[c] = state.selectedRackPiece;
+    rows[r] = collapseRow(expanded);
+
+    const newFen = rows.join('/') + ' ' + fen.split(' ').slice(1).join(' ');
     state.game.load(newFen);
     renderAll();
   } catch (e) {
@@ -632,9 +623,9 @@ function clearBoard() {
 // ============================================
 function renderMovesList() {
   els.movesList.innerHTML = '';
-  const history = state.game.history({ verbose: true });
+  let history = [];
+  try { history = state.game.history({ verbose: true }); } catch (e) {}
 
-  let ply = 0;
   for (let i = 0; i < history.length; i++) {
     const m = history[i];
     if (i % 2 === 0) {
@@ -652,13 +643,11 @@ function renderMovesList() {
     els.movesList.appendChild(moveSpan);
   }
 
-  // Auto scroll
   const current = els.movesList.querySelector('.current');
   if (current) current.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 }
 
 function goToMove(idx) {
-  // Replay to move idx
   const targetFen = getFenAtMove(idx);
   if (targetFen) {
     state.game.load(targetFen);
@@ -669,9 +658,9 @@ function goToMove(idx) {
 }
 
 function getFenAtMove(idx) {
-  // We need to replay from start
   const game = new Chess();
-  const verbose = state.game.history({ verbose: true });
+  let verbose = [];
+  try { verbose = state.game.history({ verbose: true }); } catch (e) {}
   for (let i = 0; i <= idx && i < verbose.length; i++) {
     game.move(verbose[i].san);
   }
@@ -703,7 +692,6 @@ function prevMove() {
 }
 
 function deleteMove() {
-  // Remove last move and go back
   const total = state.game.history().length;
   if (total === 0) return;
   state.game.undo();
@@ -830,10 +818,7 @@ function saveLesson() {
   a.click();
   URL.revokeObjectURL(url);
 
-  // Also save to localStorage
-  try {
-    localStorage.setItem('chessx_current_lesson', json);
-  } catch (e) {}
+  try { localStorage.setItem('chessx_current_lesson', json); } catch (e) {}
   toast('Lesson saved', 'success');
 }
 
@@ -849,7 +834,6 @@ function importLessonFile(file) {
       applyLesson(lesson);
       toast('Lesson loaded', 'success');
     } catch (err) {
-      // Try PGN
       try {
         state.game.load_pgn(e.target.result);
         state.historyIndex = state.game.history().length - 1;
@@ -894,7 +878,6 @@ function exportPgn() {
   toast('PGN exported', 'success');
 }
 
-// Auto-load last lesson
 function autoLoadLesson() {
   try {
     const saved = localStorage.getItem('chessx_current_lesson');
@@ -943,19 +926,17 @@ function initEngine() {
     console.error(e);
     $('engineStatus').textContent = 'Unavailable';
   }
-}</old_text>
+}
 
 function handleEngineMessage(line) {
   if (typeof line !== 'string') return;
 
   if (line.startsWith('info') && line.includes('score')) {
-    // Parse multipv info
     const parts = line.split(' ');
     let multipv = 1;
     let depth = 0;
     let cp = 0;
     let mate = null;
-    let pv = '';
     let pvStart = false;
     let pvMoves = [];
 
@@ -989,17 +970,11 @@ function handleEngineMessage(line) {
       $('depth').textContent = depth;
       $('pvMoves').textContent = pvMoves.map(formatMove).join(' ') || '—';
 
-      // Update eval bar
       const whitePercent = Math.max(0, Math.min(100, 50 + (evalCp / 400) * 50));
       $('barWhite').style.width = whitePercent + '%';
       $('barBlack').style.width = (100 - whitePercent) + '%';
 
       $('engineStatus').textContent = `Analyzing d${depth}`;
-    }
-
-    // Multi-PV lines
-    if (state.engine.multipv > 1) {
-      renderMultiPV();
     }
   }
 
@@ -1016,13 +991,6 @@ function handleEngineMessage(line) {
 function formatMove(uci) {
   if (!uci || uci.length < 4) return uci;
   return uci.substring(0, 2) + '-' + uci.substring(2, 4);
-}
-
-function renderMultiPV() {
-  // Simplified - the engine messages are interleaved, we keep last for multipv
-  const container = $('multipv');
-  container.innerHTML = '';
-  // For simplicity show just primary line
 }
 
 function requestEngineEval() {
@@ -1063,7 +1031,7 @@ function setEngineMultiPV(n) {
     state.engine.stockfish.setMultiPV(n);
     if (state.engine.enabled) requestEngineEval();
   }
-}</old_text>
+}
 
 // ============================================
 // ZOOM
@@ -1100,7 +1068,6 @@ function resetBoard() {
 // ============================================
 function createPuzzle() {
   const question = els.puzzleInput.value || 'What should White play here?';
-  // Compute best move
   let answer = 'Unknown';
   if (state.engine.stockfish) {
     state.engine.stockfish.stop();
@@ -1257,7 +1224,6 @@ async function startScreenRecording() {
     state.recording.stream = stream;
     state.recording.chunks = [];
 
-    // Combine screen + mic if enabled
     let combinedStream = stream;
     if (state.recording.micStream) {
       const audioTracks = state.recording.micStream.getAudioTracks();
@@ -1304,7 +1270,6 @@ async function startScreenRecording() {
       $('recLiveTimer').textContent = formatTime(elapsed);
     }, 1000);
 
-    // When stream ends (user stops sharing)
     stream.getVideoTracks()[0].onended = () => {
       stopScreenRecording();
     };
@@ -1347,14 +1312,13 @@ function stopScreenRecording() {
 // KEYBOARD SHORTCUTS
 // ============================================
 document.addEventListener('keydown', (e) => {
-  // Ignore if typing in input
   if (e.target.matches('input, textarea, select')) return;
 
   switch (e.key) {
     case 'ArrowLeft': e.preventDefault(); prevMove(); break;
     case 'ArrowRight': e.preventDefault(); nextMove(); break;
     case 'f': case 'F': flipBoard(); break;
-    case 'r': case 'R': if (e.ctrlKey || e.metaKey) { /* skip */ } else resetBoard(); break;
+    case 'r': case 'R': if (!e.ctrlKey && !e.metaKey) resetBoard(); break;
     case 'a': case 'A': setTool('arrow'); break;
     case 'c': case 'C': setTool('circle'); break;
     case 'e': case 'E': setTool('eraser'); break;
@@ -1362,9 +1326,14 @@ document.addEventListener('keydown', (e) => {
     case 'h': case 'H': if (state.recording.mode) toggleUi(); else setTool('highlight'); break;
     case 'n': case 'N': nextBookmark(); break;
     case 'p': case 'P': prevBookmark(); break;
-    case 'z': case 'Z': if (e.ctrlKey || e.metaKey) { e.preventDefault(); state.game.undo(); state.historyIndex = state.game.history().length - 1; renderAll(); } break;
-    case 'y': case 'Y': if (e.ctrlKey || e.metaKey) { e.preventDefault(); /* redo */ } break;
-    case ' ': e.preventDefault(); /* space - could be play/pause */ break;
+    case 'z': case 'Z':
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        state.game.undo();
+        state.historyIndex = state.game.history().length - 1;
+        renderAll();
+      }
+      break;
     case 'Escape': if (state.recording.mode) exitRecordingMode(); break;
   }
 });
@@ -1385,30 +1354,24 @@ function renderAll() {
 // EVENT BINDINGS
 // ============================================
 function bindEvents() {
-  // Board
   els.board.addEventListener('mousedown', onSquareMouseDown);
   els.board.addEventListener('mouseup', onSquareMouseUp);
 
-  // Top bar
   $('btnFlip').addEventListener('click', flipBoard);
   $('btnReset').addEventListener('click', resetBoard);
   $('btnUndo').addEventListener('click', () => { state.game.undo(); state.historyIndex = state.game.history().length - 1; renderAll(); });
-  $('btnRedo').addEventListener('click', () => { /* no full redo, but we can move forward */ });
   $('btnFullscreen').addEventListener('click', () => {
     if (!document.fullscreenElement) document.documentElement.requestFullscreen();
     else document.exitFullscreen();
   });
 
-  // Layout switcher
   $$('.layout-btn').forEach(b => b.addEventListener('click', () => setLayout(b.dataset.layout)));
 
-  // Recording mode
   $('btnRecordMode').addEventListener('click', enterRecordingMode);
   $('btnExitRecMode').addEventListener('click', exitRecordingMode);
   $('btnToggleUi').addEventListener('click', toggleUi);
   $('btnToggleMic').addEventListener('click', toggleMic);
 
-  // Drawing tools
   $$('.tool-btn').forEach(b => b.addEventListener('click', () => setTool(b.dataset.tool)));
   $$('.color-dot').forEach(b => b.addEventListener('click', () => {
     state.currentColor = b.dataset.color;
@@ -1417,13 +1380,11 @@ function bindEvents() {
   }));
   $('btnClearAnnotations').addEventListener('click', clearAllAnnotations);
 
-  // Title
   $('btnToggleTitle').addEventListener('click', () => {
     state.titleHidden = !state.titleHidden;
     els.lessonHeader.style.display = state.titleHidden ? 'none' : 'flex';
   });
 
-  // Position editor
   $('btnStartFromPosition').addEventListener('click', () => {
     state.setupMode = false;
     state.selectedRackPiece = null;
@@ -1435,50 +1396,39 @@ function bindEvents() {
   });
   $('btnClearBoard').addEventListener('click', clearBoard);
 
-  // FEN
   $('btnLoadFen').addEventListener('click', loadFen);
   $('btnCopyFen').addEventListener('click', copyFen);
 
-  // Bookmarks
   $('btnSaveBookmark').addEventListener('click', saveBookmark);
   $('btnPrevBookmark').addEventListener('click', prevBookmark);
   $('btnNextBookmark').addEventListener('click', nextBookmark);
 
-  // Moves
   $('btnPrevMove').addEventListener('click', prevMove);
   $('btnNextMove').addEventListener('click', nextMove);
   $('btnDeleteMove').addEventListener('click', deleteMove);
   $('btnAddVariation').addEventListener('click', () => {
-    // Save current as a variation, branch
     const fen = state.game.fen();
-    if (!state.variations.includes(fen)) {
-      state.variations.push(fen);
-    }
+    if (!state.variations.includes(fen)) state.variations.push(fen);
     toast('Variation saved', 'success');
   });
 
-  // Engine
   $('btnEngineToggle').addEventListener('click', toggleEngine);
   $('btnHideEngine').addEventListener('click', hideEngine);
   $('engineDepth').addEventListener('change', (e) => setEngineDepth(e.target.value));
   $('engineMultiPV').addEventListener('change', (e) => setEngineMultiPV(e.target.value));
 
-  // Themes
   $$('.theme-btn').forEach(b => b.addEventListener('click', () => setTheme(b.dataset.theme)));
   $('pieceStyle').addEventListener('change', (e) => { state.pieceStyle = e.target.value; renderBoard(); });
 
-  // Teacher notes
   $('btnToggleNotes').addEventListener('click', () => {
     state.notesHidden = !state.notesHidden;
     $('teacherNotes').style.display = state.notesHidden ? 'none' : 'block';
   });
 
-  // Puzzle
   $('btnCreatePuzzle').addEventListener('click', createPuzzle);
   $('btnClosePuzzle').addEventListener('click', closePuzzle);
   $('btnRevealAnswer').addEventListener('click', revealAnswer);
 
-  // Clock
   $$('[data-clock]').forEach(b => b.addEventListener('click', () => {
     setClock(parseInt(b.dataset.time));
     if (state.clock.running) toggleClock();
@@ -1494,11 +1444,6 @@ function bindEvents() {
     $('clockPanel').querySelector('.clocks').style.display = state.clockHidden ? 'none' : 'grid';
   });
 
-  // Switch clock on move
-  const origTryMove = tryMakeMove;
-  // (already wired through board interaction)
-
-  // Lesson
   $('btnSaveLesson').addEventListener('click', saveLesson);
   $('btnLoadLesson').addEventListener('click', loadLesson);
   $('btnExportPgn').addEventListener('click', exportPgn);
@@ -1507,11 +1452,9 @@ function bindEvents() {
     if (e.target.files[0]) importLessonFile(e.target.files[0]);
   });
 
-  // Zoom
   $('btnZoomIn').addEventListener('click', () => setZoom(state.zoom + 0.1));
   $('btnZoomOut').addEventListener('click', () => setZoom(state.zoom - 0.1));
 
-  // Screen recording controls
   $('btnStopRec').addEventListener('click', stopScreenRecording);
   $('btnPauseRec').addEventListener('click', pauseScreenRecording);
   $('btnCloseModal').addEventListener('click', () => $('videoModal').classList.add('hidden'));
@@ -1519,10 +1462,8 @@ function bindEvents() {
   $('btnCloseObsModal').addEventListener('click', () => $('obsModal').classList.add('hidden'));
   $('btnCloseObsOk').addEventListener('click', () => $('obsModal').classList.add('hidden'));
 
-  // Window resize
   window.addEventListener('resize', () => renderAnnotations());
 
-  // Switch clock on each successful move
   els.board.addEventListener('click', () => {
     if (state.clock.running) setTimeout(switchClockSide, 100);
   });
@@ -1532,7 +1473,6 @@ function bindEvents() {
 // INITIALIZATION
 // ============================================
 function init() {
-  // Wait a tick if Chess isn't loaded yet
   if (typeof Chess === 'undefined') {
     console.warn('Chess.js not loaded yet, retrying...');
     setTimeout(() => {

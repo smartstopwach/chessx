@@ -691,6 +691,7 @@ textarea {
   border-radius: var(--radius);
   padding: 16px;
   min-height: 0;
+  overflow: auto;
 }
 
 .board-wrapper {
@@ -700,6 +701,7 @@ textarea {
   gap: 6px;
   max-width: 100%;
   max-height: 100%;
+  width: 100%;
 }
 
 .board-meta-top, .board-meta-bottom {
@@ -742,16 +744,12 @@ textarea {
   position: relative;
   width: var(--board-size, 640px);
   height: var(--board-size, 640px);
-  min-width: 400px;
-  min-height: 400px;
-  max-width: 90vmin;
-  max-height: 90vmin;
-  aspect-ratio: 1;
   border: 3px solid var(--board-border);
   border-radius: 4px;
   box-shadow: var(--shadow-lg);
   background: #739552;
   overflow: hidden;
+  flex-shrink: 0;
 }
 
 .board {

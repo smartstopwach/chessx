@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head><title>ChessX Diagnostic</title>
+<style>
+  body { font-family: monospace; background: #0d1117; color: #e6edf3; padding: 20px; }
+  .ok { color: #3fb950; }
+  .fail { color: #f85149; }
+  pre { background: #161b22; padding: 14px; border-radius: 6px; border: 1px solid #2d333b; overflow-x: auto; }
+  h1 { color: #e8c547; }
+</style>
+</head>
+<body>
+<h1>ChessX Diagnostic</h1>
+<div id="results">Running tests...</div>
+<pre id="log"></pre>
+<script>
+const log = document.getElementById('log');
+const origLog = console.log;
+console.log = (...args) => { log.textContent += args.join(' ') + '\n'; origLog(...args); };
+const origError = console.error;
+console.error = (...args) => { log.textContent += '❌ ' + args.join(' ') + '\n'; origError(...args); };
+
+window.addEventListener('error', e => {
+  log.textContent += '❌ ERROR: ' + e.message + ' (' + e.filename + ':' + e.lineno + ')\n';
+});
+
+async function runTests() {
+  const results = document.getElementById('results');
+  const checks = [];
+
+  // Test 1: chess.js
+  try {
+    if (typeof Chess === 'function') {
+      const game = new Chess();
+      checks.push(['chess.js loaded', true, 'FEN: ' + game.fen()]);
+    } else {
+      checks.push(['chess.js loaded', false, 'Chess is ' + typeof Chess]);
+    }
+  } catch (e) {
+    checks.push(['chess.js loaded', false, e.message]);
+  }
+
+  // Test 2: PIECE_SVG
+  checks.push(['PIECE_SVG defined', typeof PIECE_SVG !== 'undefined', 'has ' + (PIECE_SVG ? Object.keys(PIECE_SVG).length : 0) + ' pieces']);
+
+  // Test 3: StockfishEngine
+  checks.push(['StockfishEngine defined', typeof StockfishEngine !== 'undefined']);
+
+  // Test 4: state
+  checks.push(['state defined', typeof state !== 'undefined']);
+
+  // Test 5: board element
+  const boardEl = document.getElementById('board');
+  checks.push(['board element exists', !!boardEl]);
+
+  // Test 6: squares rendered
+  const squares = boardEl ? boardEl.querySelectorAll('.square') : [];
+  checks.push(['squares rendered (need 64)', squares.length === 64, 'got ' + squares.length]);
+
+  // Test 7: pieces
+  const pieces = boardEl ? boardEl.querySelectorAll('.piece') : [];
+  checks.push(['pieces rendered (need 32)', pieces.length === 32, 'got ' + pieces.length]);
+
+  // Render
+  let html = '<h2>Results</h2>';
+  checks.forEach(([name, ok, detail]) => {
+    html += `<div class="${ok ? 'ok' : 'fail'}">${ok ? '✓' : '✗'} ${name}: ${detail || ''}</div>`;
+  });
+  results.innerHTML = html;
+}
+
+// Run after scripts load
+setTimeout(runTests, 500);
+</script>
+
+<script src="chess.min.js"></script>
+<script src="pieces.js"></script>
+<script src="engine.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
