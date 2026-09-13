@@ -262,6 +262,10 @@ body {
 .layout[data-layout="board"] { grid-template-columns: 0 1fr 0; }
 .layout[data-layout="board"] .sidebar { display: none; }
 
+/* FOCUS LAYOUT (default): hide left sidebar, narrow right sidebar — board fills most space */
+.layout[data-layout="focus"] { grid-template-columns: 0 1fr 280px; }
+.layout[data-layout="focus"] .sidebar-left { display: none; }
+
 .layout[data-layout="moves"] { grid-template-columns: 0 1fr 320px; }
 .layout[data-layout="moves"] .sidebar-left { display: none; }
 
@@ -1275,3 +1279,10 @@ textarea {
   resize: none;
   min-height: 120px;
 }
+
+
+/* ============================================
+   LEFT SIDEBAR TOGGLE (when hidden via Tools button)
+   ============================================ */
+.layout.left-sidebar-visible { grid-template-columns: 280px 1fr 280px; }
+.layout.left-sidebar-visible .sidebar-left { display: flex; }

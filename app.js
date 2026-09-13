@@ -61,7 +61,7 @@ const state = {
   puzzle: null,
   puzzleAnswer: null,
   clock: { wTime: 600, bTime: 600, running: false, activeColor: 'w', interval: null },
-  layout: 'board',
+  layout: 'focus',
   uiHidden: false,
   titleHidden: false,
   notesHidden: false,
@@ -1296,6 +1296,12 @@ function bindEvents() {
   });
 
   $('btnEngineToggle').addEventListener('click', toggleEngine);
+  // Toggle left sidebar (Tools) visibility
+  $('btnToggleLeftSidebar').addEventListener('click', () => {
+    els.layout.classList.toggle('left-sidebar-visible');
+    setTimeout(autoFitBoard, 50);
+  });
+
   $('btnHideEngine').addEventListener('click', hideEngine);
   $('engineDepth').addEventListener('change', (e) => setEngineDepth(e.target.value));
   $('engineMultiPV').addEventListener('change', (e) => setEngineMultiPV(e.target.value));
