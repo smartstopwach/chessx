@@ -820,6 +820,7 @@ function loadPreset(name) {
   } catch (e) {
     toast('Invalid preset', 'error');
   }
+}
 
 function clearBoard() {
   state.game.load('8/8/8/8/8/8/8/8 w - - 0 1');
