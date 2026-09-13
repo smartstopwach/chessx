@@ -820,34 +820,6 @@ function loadPreset(name) {
   } catch (e) {
     toast('Invalid preset', 'error');
   }
-}
-
-function expandRow(row) {
-  const result = [];
-  for (const ch of row) {
-    if (/[1-8]/.test(ch)) {
-      for (let i = 0; i < parseInt(ch); i++) result.push('1');
-    } else {
-      result.push(ch);
-    }
-  }
-  return result;
-}
-
-function collapseRow(arr) {
-  let result = '';
-  let empty = 0;
-  for (const ch of arr) {
-    if (ch === '1') {
-      empty++;
-    } else {
-      if (empty > 0) { result += empty; empty = 0; }
-      result += ch;
-    }
-  }
-  if (empty > 0) result += empty;
-  return result;
-}
 
 function clearBoard() {
   state.game.load('8/8/8/8/8/8/8/8 w - - 0 1');
