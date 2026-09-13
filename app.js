@@ -1480,6 +1480,7 @@ function deleteCurrentPuzzle() {
   const lib = getLibrary();
   if (!lib.activePuzzleId) { toast('No puzzle selected', 'error'); return; }
   const puz = getActivePuzzle();
+  if (!puz) { toast('Puzzle not found', 'error'); return; }
   if (!confirm(`Delete puzzle "${puz.title}"?`)) return;
   for (const c of lib.chapters) {
     const idx = c.puzzles.findIndex(p => p.id === lib.activePuzzleId);
