@@ -1671,21 +1671,20 @@ body[data-authoring="true"] .board-container::after {
   border-radius: 4px;
 }
 
-/* Authoring toolbar floating over the board */
+/* Authoring toolbar — sits BELOW the board, never overlaps board squares */
 .authoring-toolbar {
-  position: absolute;
-  top: 50px;
-  left: 50%;
-  transform: translateX(-50%);
   display: none;
   align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
   gap: 6px;
   background: rgba(13, 17, 23, 0.95);
   border: 1px solid var(--accent);
-  padding: 6px 12px;
-  border-radius: 999px;
-  z-index: 60;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  padding: 8px 12px;
+  border-radius: 8px;
+  margin-top: 10px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+  align-self: center;
 }
 
 body[data-authoring="true"] .authoring-toolbar {
