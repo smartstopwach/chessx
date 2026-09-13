@@ -1318,6 +1318,7 @@ body.recording-mode .layout {
 }
 
 body.recording-mode .board-area {
+  grid-column: 2 / 3 !important;
   width: 100%;
   max-width: 100%;
   align-self: stretch;
