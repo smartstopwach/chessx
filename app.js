@@ -59,7 +59,6 @@ const state = {
   variations: [],
   currentVariation: 'main',
   puzzle: null,
-  puzzleAnswer: null,
   clock: { wTime: 600, bTime: 600, running: false, activeColor: 'w', interval: null },
   layout: 'focus',
   uiHidden: false,
@@ -105,7 +104,6 @@ const els = {
   movesList: $('movesList'),
   fenInput: $('fenInput'),
   teacherNotes: $('teacherNotes'),
-  puzzleInput: $('puzzleInput'),
   puzzleOverlay: $('puzzleOverlay'),
   puzzleQuestion: $('puzzleQuestion'),
   puzzleAnswer: $('puzzleAnswer'),
@@ -1888,44 +1886,6 @@ function resetBoard() {
 }
 
 // ============================================
-// PUZZLE MODE
-// ============================================
-function createPuzzle() {
-  const question = els.puzzleInput.value || 'What should White play here?';
-  let answer = 'Unknown';
-  if (state.engine.stockfish) {
-    state.engine.stockfish.stop();
-    state.engine.stockfish.setPosition(state.game.fen());
-    state.engine.stockfish.go(12);
-    setTimeout(() => {
-      if (state.engine.bestMove) {
-        try {
-          const m = state.game.move({ from: state.engine.bestMove.substring(0,2), to: state.engine.bestMove.substring(2,4), promotion: 'q' });
-          if (m) {
-            answer = m.san;
-            state.game.undo();
-          }
-        } catch (e) {}
-      }
-      $('puzzleAnswerMove').textContent = answer;
-    }, 1500);
-  }
-  state.puzzle = { question, answer };
-  els.puzzleQuestion.textContent = question;
-  els.puzzleOverlay.classList.remove('hidden');
-  els.puzzleAnswer.classList.add('hidden');
-}
-
-function revealAnswer() {
-  els.puzzleAnswer.classList.remove('hidden');
-}
-
-function closePuzzle() {
-  els.puzzleOverlay.classList.add('hidden');
-  state.puzzle = null;
-}
-
-// ============================================
 // CHESS CLOCK
 // ============================================
 function formatTime(sec) {
@@ -2144,10 +2104,6 @@ function bindEvents() {
     state.notesHidden = !state.notesHidden;
     $('teacherNotes').style.display = state.notesHidden ? 'none' : 'block';
   });
-
-  $('btnCreatePuzzle').addEventListener('click', createPuzzle);
-  $('btnClosePuzzle').addEventListener('click', closePuzzle);
-  $('btnRevealAnswer').addEventListener('click', revealAnswer);
 
   $$('[data-clock]').forEach(b => b.addEventListener('click', () => {
     setClock(parseInt(b.dataset.time));
