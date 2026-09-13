@@ -38,8 +38,8 @@ function createGame() {
 
 const state = {
   game: createGame(),
-  history: [],
-  historyIndex: -1,
+  history: [],           // Persistent move history (SAN strings), survives undo/load
+  historyIndex: -1,      // Pointer into history: -1 = start, history.length-1 = latest
   position: { fen: '' },
   flipped: false,
   selectedSquare: null,
@@ -220,11 +220,16 @@ function highlightSquares() {
     const cd = sq.querySelector('.capture-dot'); if (cd) cd.remove();
   });
 
-  // Last move
+  // Last move (highlight from/to of the current move in the persistent history)
   try {
-    const history = state.game.history({ verbose: true });
-    if (history.length > 0 && state.historyIndex >= 0 && state.historyIndex < history.length) {
-      const lastMove = history[state.historyIndex];
+    if (state.historyIndex >= 0 && state.historyIndex < state.history.length) {
+      const san = state.history[state.historyIndex];
+      const game = new Chess();
+      for (let i = 0; i <= state.historyIndex; i++) {
+        try { game.move(state.history[i]); } catch (e) {}
+      }
+      const verbose = game.history({ verbose: true });
+      const lastMove = verbose[verbose.length - 1];
       if (lastMove) {
         const fromSq = showSquare(lastMove.from);
         const toSq = showSquare(lastMove.to);
@@ -475,7 +480,10 @@ function tryMakeMove(from, to) {
     const result = state.game.move({ from, to, promotion: 'q' });
     if (result) {
       state.selectedSquare = null;
-      state.historyIndex = state.game.history().length - 1;
+      // Append the new SAN to our persistent history, dropping any redo branch
+      state.history = state.history.slice(0, state.historyIndex + 1);
+      state.history.push(result.san);
+      state.historyIndex = state.history.length - 1;
       renderAll();
       requestEngineEval();
       return true;
@@ -580,6 +588,8 @@ function placePieceOnSetup(sq) {
 
     const newFen = rows.join('/') + ' ' + fen.split(' ').slice(1).join(' ');
     state.game.load(newFen);
+    state.history = [];
+    state.historyIndex = -1;
     renderAll();
   } catch (e) {
     toast('Invalid position', 'error');
@@ -615,6 +625,8 @@ function collapseRow(arr) {
 
 function clearBoard() {
   state.game.load('8/8/8/8/8/8/8/8 w - - 0 1');
+  state.history = [];
+  state.historyIndex = -1;
   renderAll();
 }
 
@@ -623,11 +635,10 @@ function clearBoard() {
 // ============================================
 function renderMovesList() {
   els.movesList.innerHTML = '';
-  let history = [];
-  try { history = state.game.history({ verbose: true }); } catch (e) {}
+  const history = state.history || [];
 
   for (let i = 0; i < history.length; i++) {
-    const m = history[i];
+    const san = history[i];
     if (i % 2 === 0) {
       const num = document.createElement('span');
       num.className = 'move-num';
@@ -637,7 +648,7 @@ function renderMovesList() {
     const moveSpan = document.createElement('span');
     moveSpan.className = 'move-san';
     if (i === state.historyIndex) moveSpan.classList.add('current');
-    moveSpan.textContent = m.san;
+    moveSpan.textContent = san;
     moveSpan.dataset.idx = i;
     moveSpan.addEventListener('click', () => goToMove(i));
     els.movesList.appendChild(moveSpan);
@@ -648,29 +659,36 @@ function renderMovesList() {
 }
 
 function goToMove(idx) {
-  const targetFen = getFenAtMove(idx);
-  if (targetFen) {
-    state.game.load(targetFen);
-    state.historyIndex = idx;
-    state.selectedSquare = null;
-    renderAll();
+  if (idx < -1 || idx >= state.history.length) return;
+  state.historyIndex = idx;
+  if (idx < 0) {
+    state.game.load('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1');
+  } else {
+    state.game.load(getFenAtMove(idx));
   }
+  state.selectedSquare = null;
+  renderAll();
 }
 
 function getFenAtMove(idx) {
+  // idx is into state.history (persistent, SAN strings)
   const game = new Chess();
-  let verbose = [];
-  try { verbose = state.game.history({ verbose: true }); } catch (e) {}
-  for (let i = 0; i <= idx && i < verbose.length; i++) {
-    game.move(verbose[i].san);
+  for (let i = 0; i <= idx && i < state.history.length; i++) {
+    try { game.move(state.history[i]); } catch (e) {}
   }
   return game.fen();
 }
 
+function getCurrentFen() {
+  // The actual FEN shown on the board, reconstructed from history up to historyIndex
+  if (state.historyIndex < 0) {
+    return 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+  }
+  return getFenAtMove(state.historyIndex);
+}
+
 function nextMove() {
-  const total = state.game.history().length;
-  // Move forward through history (after undo/prev). historyIndex -1 → total-1.
-  if (state.historyIndex < total - 1) {
+  if (state.historyIndex < state.history.length - 1) {
     state.historyIndex++;
     state.game.load(getFenAtMove(state.historyIndex));
     state.selectedSquare = null;
@@ -685,7 +703,6 @@ function prevMove() {
     state.selectedSquare = null;
     renderAll();
   } else if (state.historyIndex === 0) {
-    // Go back to before any moves
     state.historyIndex = -1;
     state.game.load('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1');
     state.selectedSquare = null;
@@ -694,16 +711,19 @@ function prevMove() {
 }
 
 function deleteMove() {
-  const total = state.game.history().length;
-  if (total === 0) return;
-  // Actually remove the move from the game
-  const lastMove = state.game.history({ verbose: true })[total - 1];
-  state.game.undo();
-  state.historyIndex = state.game.history().length - 1;
+  if (state.history.length === 0) return;
+  const lastSan = state.history[state.history.length - 1];
+  state.history.pop();
+  state.historyIndex = state.history.length - 1;
+  if (state.historyIndex < 0) {
+    state.game.load('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1');
+  } else {
+    state.game.load(getFenAtMove(state.historyIndex));
+  }
   state.selectedSquare = null;
   renderAll();
   requestEngineEval();
-  toast(`Deleted: ${lastMove.san}`, 'success');
+  toast(`Deleted: ${lastSan}`, 'success');
 }
 
 // ============================================
@@ -720,7 +740,8 @@ function copyFen() {
 function loadFen() {
   try {
     state.game.load(els.fenInput.value);
-    state.historyIndex = state.game.history().length - 1;
+    state.history = [];           // reset history on FEN load (no PGN)
+    state.historyIndex = -1;
     renderAll();
     toast('FEN loaded', 'success');
   } catch (e) {
@@ -772,11 +793,12 @@ function loadBookmark(idx) {
   if (!bm) return;
   try {
     state.game.load(bm.fen);
+    state.history = [];
+    state.historyIndex = -1;
     state.arrows = [...bm.arrows];
     state.circles = [...bm.circles];
     state.highlights = [...bm.highlights];
     state.rectangles = [...bm.rectangles];
-    state.historyIndex = state.game.history().length - 1;
     renderAll();
     toast(`Loaded: ${bm.name}`, 'success');
   } catch (e) {
@@ -842,7 +864,9 @@ function importLessonFile(file) {
     } catch (err) {
       try {
         state.game.load_pgn(e.target.result);
-        state.historyIndex = state.game.history().length - 1;
+        // Rebuild history from loaded PGN
+        state.history = state.game.history();
+        state.historyIndex = state.history.length - 1;
         renderAll();
         toast('PGN loaded', 'success');
       } catch (err2) {
@@ -858,7 +882,8 @@ function applyLesson(lesson) {
   if (lesson.subtitle) els.lessonSubtitle.value = lesson.subtitle;
   if (lesson.fen) {
     state.game.load(lesson.fen);
-    state.historyIndex = state.game.history().length - 1;
+    state.history = [];
+    state.historyIndex = -1;
   }
   if (lesson.arrows) state.arrows = lesson.arrows;
   if (lesson.circles) state.circles = lesson.circles;
@@ -1062,8 +1087,9 @@ function flipBoard() {
 }
 
 function resetBoard() {
-  if (state.game.history().length > 0 && !confirm('Reset board and clear moves?')) return;
+  if (state.history.length > 0 && !confirm('Reset board and clear moves?')) return;
   state.game.reset();
+  state.history = [];
   state.historyIndex = -1;
   clearAllAnnotations();
   renderAll();
@@ -1402,7 +1428,8 @@ function bindEvents() {
     state.setupMode = false;
     state.selectedRackPiece = null;
     $$('.rack-piece').forEach(x => x.classList.remove('selected'));
-    state.historyIndex = state.game.history().length - 1;
+    state.history = [];
+    state.historyIndex = -1;
     renderAll();
     requestEngineEval();
     toast('Position set', 'success');
