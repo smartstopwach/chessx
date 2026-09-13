@@ -1231,16 +1231,24 @@ textarea {
   top: 16px;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(13, 17, 23, 0.95);
-  border: 1px solid var(--accent);
+  background: rgba(13, 17, 23, 0.97);
+  border: 2px solid var(--accent);
   padding: 8px 14px;
-  border-radius: 999px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
   z-index: 1000;
-  box-shadow: 0 0 30px var(--accent-glow);
-  backdrop-filter: blur(10px);
+  box-shadow: 0 0 30px var(--accent-glow), 0 8px 24px rgba(0,0,0,0.5);
+  backdrop-filter: blur(12px);
+  flex-wrap: wrap;
+  max-width: 95vw;
+}
+
+.rec-divider {
+  width: 1px;
+  height: 28px;
+  background: var(--border);
 }
 
 .rec-indicator {
@@ -1271,15 +1279,72 @@ textarea {
   color: var(--text-primary);
   font-size: 14px;
   font-weight: 700;
+  min-width: 50px;
 }
 
-.rec-actions { display: flex; gap: 6px; }
+/* Drawing tools in rec bar */
+.rec-tools {
+  display: flex;
+  gap: 2px;
+  background: var(--bg-tertiary);
+  padding: 3px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+
+.rec-tool {
+  width: 28px;
+  height: 26px;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+  font-family: inherit;
+}
+
+.rec-tool:hover { background: var(--bg-elevated); color: var(--text-primary); }
+.rec-tool.active { background: var(--accent); color: var(--bg-primary); }
+.rec-tool.active svg { stroke: var(--bg-primary); }
+
+/* Colors in rec bar */
+.rec-colors {
+  display: flex;
+  gap: 4px;
+  padding: 4px 6px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+
+.rec-color {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--c);
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: var(--transition);
+  outline: none;
+}
+
+.rec-color:hover { transform: scale(1.15); }
+.rec-color.active {
+  border-color: var(--text-primary);
+  box-shadow: 0 0 0 2px var(--bg-panel);
+}
+
+.rec-actions { display: flex; gap: 4px; }
 
 .rec-btn {
   background: var(--bg-elevated);
   border: 1px solid var(--border);
   color: var(--text-primary);
-  padding: 6px 10px;
+  padding: 6px 9px;
   border-radius: var(--radius-sm);
   cursor: pointer;
   display: flex;
@@ -1292,8 +1357,20 @@ textarea {
 }
 
 .rec-btn:hover { background: var(--bg-tertiary); border-color: var(--accent); }
-
 .rec-btn.active { background: var(--accent); color: var(--bg-primary); border-color: var(--accent); }
+.rec-btn.active svg { stroke: var(--bg-primary); }
+
+.rec-btn-record {
+  background: linear-gradient(135deg, #c1272d, #8b0000);
+  border-color: #ff5555;
+  color: white;
+  font-weight: 700;
+}
+
+.rec-btn-record:hover {
+  background: linear-gradient(135deg, #d6363c, #a30000);
+  box-shadow: 0 0 12px rgba(193, 39, 45, 0.6);
+}
 
 .rec-btn-danger { color: var(--danger); border-color: rgba(248, 81, 73, 0.4); }
 .rec-btn-danger:hover { background: rgba(248, 81, 73, 0.15); }
@@ -1306,8 +1383,7 @@ body.recording-mode .lesson-header {
   border: none;
 }
 
-body.recording-mode .topbar .btn-ghost,
-body.recording-mode .topbar .layout-switch,
+body.recording-mode .layout-switch,
 body.recording-mode .topbar .divider { display: none; }
 
 body.recording-mode .topbar-actions #btnRecordMode { display: none; }
@@ -1326,22 +1402,23 @@ body.recording-mode .board-area {
 }
 
 body.recording-mode .board-container {
-  width: min(85vh, 85vw, 720px) !important;
-  height: min(85vh, 85vw, 720px) !important;
+  width: min(80vh, 80vw, 640px) !important;
+  height: min(80vh, 80vw, 640px) !important;
+  box-shadow: 0 0 60px rgba(0,0,0,0.8), 0 0 0 1px var(--border);
+}
+
+body.recording-mode .board-area {
+  padding-top: 100px; /* leave room for the big recording bar */
 }
 
 body.recording-mode .sidebar { display: none; }
-
-body.recording-mode .board-container {
-  box-shadow: 0 0 60px rgba(0,0,0,0.8), 0 0 0 1px var(--border);
-}
 
 body.recording-mode.ui-hidden .topbar,
 body.recording-mode.ui-hidden .lesson-header,
 body.recording-mode.ui-hidden .zoom-controls,
 body.recording-mode.ui-hidden .recording-bar { opacity: 0; pointer-events: none; transition: opacity 0.3s; }
 
-body.recording-mode.ui-hidden:hover .recording-bar { opacity: 1; }
+body.recording-mode.ui-hidden:hover .recording-bar { opacity: 1; }</old_text>
 
 /* ============================================
    COUNTDOWN OVERLAY (Recordly-style 3-2-1)

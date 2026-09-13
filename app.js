@@ -541,6 +541,8 @@ function clearAllAnnotations() {
 function setTool(tool) {
   state.currentTool = tool;
   $$('.tool-btn').forEach(b => b.classList.toggle('active', b.dataset.tool === tool));
+  // Also sync recording bar tool buttons
+  $$('#recTools .rec-tool').forEach(b => b.classList.toggle('active', b.dataset.tool === tool));
   els.board.style.cursor = (tool === 'arrow' || tool === 'rectangle') ? 'crosshair' :
                            tool === 'eraser' ? 'not-allowed' : 'default';
 }
@@ -1587,6 +1589,21 @@ function bindEvents() {
   $('btnWebcamHide').addEventListener('click', hideWebcam);
   $('btnWebcamResize').addEventListener('click', cycleWebcamSize);
   $('btnWebcamFullscreen').addEventListener('click', toggleWebcamFullscreen);
+
+  // Recording bar quick-access tools (drawing tools, undo/redo, flip, reset)
+  $$('#recTools .rec-tool').forEach(b => b.addEventListener('click', () => {
+    setTool(b.dataset.tool);
+  }));
+  $$('#recColors .rec-color').forEach(b => b.addEventListener('click', () => {
+    state.currentColor = b.dataset.color;
+    $$('#recColors .rec-color').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+  }));
+  $('btnRecUndo').addEventListener('click', prevMove);
+  $('btnRecRedo').addEventListener('click', nextMove);
+  $('btnRecFlip').addEventListener('click', flipBoard);
+  $('btnRecReset').addEventListener('click', resetBoard);
+  $('btnRecClear').addEventListener('click', clearAllAnnotations);
 
   $$('.tool-btn').forEach(b => b.addEventListener('click', () => setTool(b.dataset.tool)));
   $$('.color-dot').forEach(b => b.addEventListener('click', () => {

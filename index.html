@@ -426,27 +426,71 @@
     <span>RECORDING MODE</span>
   </div>
   <div class="rec-timer" id="recTimer">00:00</div>
+  <div class="rec-divider"></div>
+  <div class="rec-tools" id="recTools">
+    <button class="rec-tool" data-tool="select" title="Select / Move (V)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M5 3l14 8-6 2-2 6z"/></svg>
+    </button>
+    <button class="rec-tool" data-tool="arrow" title="Arrow (A)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 20 L20 4 M14 4 H20 V10" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button class="rec-tool" data-tool="circle" title="Circle (C)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="8"/></svg>
+    </button>
+    <button class="rec-tool" data-tool="highlight" title="Highlight (H)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+    </button>
+    <button class="rec-tool" data-tool="rectangle" title="Rectangle (R)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="4" y="4" width="16" height="16"/></svg>
+    </button>
+    <button class="rec-tool" data-tool="eraser" title="Eraser (E)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 20H7L3 16l9-9 9 9-5 5"/><line x1="18" y1="13" x2="9" y2="22"/></svg>
+    </button>
+  </div>
+  <div class="rec-colors" id="recColors">
+    <button class="rec-color active" style="--c:#ef4444" data-color="#ef4444"></button>
+    <button class="rec-color" style="--c:#22c55e" data-color="#22c55e"></button>
+    <button class="rec-color" style="--c:#3b82f6" data-color="#3b82f6"></button>
+    <button class="rec-color" style="--c:#eab308" data-color="#eab308"></button>
+    <button class="rec-color" style="--c:#f97316" data-color="#f97316"></button>
+    <button class="rec-color" style="--c:#a855f7" data-color="#a855f7"></button>
+  </div>
+  <div class="rec-divider"></div>
+  <div class="rec-actions">
+    <button class="rec-btn" id="btnRecUndo" title="Undo (Ctrl+Z)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 14l-4-4 4-4"/><path d="M5 10h11a4 4 0 0 1 0 8h-4"/></svg>
+    </button>
+    <button class="rec-btn" id="btnRecRedo" title="Redo (Ctrl+Y)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 14l4-4-4-4"/><path d="M19 10H8a4 4 0 0 0 0 8h4"/></svg>
+    </button>
+    <button class="rec-btn" id="btnRecFlip" title="Flip Board (F)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 12l4-4M3 12l4 4M21 12l-4-4M21 12l-4 4"/></svg>
+    </button>
+    <button class="rec-btn" id="btnRecReset" title="Reset">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+    </button>
+    <button class="rec-btn" id="btnRecClear" title="Clear Annotations">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
+    </button>
+  </div>
+  <div class="rec-divider"></div>
   <div class="rec-actions">
     <button class="rec-btn" id="btnToggleMic" title="Microphone">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
-      <span>Mic</span>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
       <span class="mic-meter" id="micMeter"><span class="mic-meter-fill" id="micMeterFill"></span></span>
     </button>
     <button class="rec-btn" id="btnToggleWebcam" title="Webcam">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
-      <span>Cam</span>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
     </button>
     <button class="rec-btn" id="btnToggleUi" title="Hide UI (H)">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-      <span>Hide UI</span>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
     </button>
-    <button class="rec-btn" id="btnStartScreenRec" title="Start Screen Recording">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
-      <span>Record</span>
+    <button class="rec-btn rec-btn-record" id="btnStartScreenRec" title="Start Screen Recording">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+      <span>REC</span>
     </button>
-    <button class="rec-btn rec-btn-danger" id="btnExitRecMode">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      <span>EXIT</span>
+    <button class="rec-btn rec-btn-danger" id="btnExitRecMode" title="Exit Recording Mode">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
     </button>
   </div>
 </div>
