@@ -1317,6 +1317,18 @@ body.recording-mode .layout {
   padding: 4px;
 }
 
+body.recording-mode .board-area {
+  width: 100%;
+  max-width: 100%;
+  align-self: stretch;
+  justify-self: stretch;
+}
+
+body.recording-mode .board-container {
+  width: min(85vh, 85vw, 720px) !important;
+  height: min(85vh, 85vw, 720px) !important;
+}
+
 body.recording-mode .sidebar { display: none; }
 
 body.recording-mode .board-container {
