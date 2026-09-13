@@ -657,6 +657,8 @@ textarea {
   padding: 12px;
   min-height: 0;
   overflow: hidden;
+  /* Explicit min-height so flex:1 children have space to grow */
+  height: 100%;
 }
 
 .board-wrapper {
