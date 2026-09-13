@@ -1623,3 +1623,308 @@ body[data-flipped="true"] .board .coord {
 .chapter-select-row select {
   width: 100%;
 }
+
+
+/* ============================================
+   AUTHORING MODE — visual indicator when making puzzles
+   ============================================ */
+body[data-authoring="true"] .board-container {
+  background: linear-gradient(135deg, #739552 0%, #6d8e4d 100%) !important;
+  border-color: #e8c547 !important;
+  box-shadow: var(--shadow-lg), 0 0 0 3px rgba(232, 197, 71, 0.5), 0 0 30px rgba(232, 197, 71, 0.25) !important;
+}
+
+body[data-authoring="true"] .board-area {
+  background: linear-gradient(180deg, rgba(232, 197, 71, 0.08) 0%, transparent 30%) !important;
+  position: relative;
+}
+
+body[data-authoring="true"] .board-area::before {
+  content: 'AUTHORING MODE';
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(232, 197, 71, 0.95);
+  color: #0d1117;
+  padding: 4px 14px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  z-index: 50;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+  animation: authoringPulse 2s ease-in-out infinite;
+}
+
+@keyframes authoringPulse {
+  0%, 100% { box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4), 0 0 0 0 rgba(232, 197, 71, 0.5); }
+  50% { box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4), 0 0 0 8px rgba(232, 197, 71, 0); }
+}
+
+body[data-authoring="true"] .board-container::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 3px dashed rgba(232, 197, 71, 0.4);
+  pointer-events: none;
+  border-radius: 4px;
+}
+
+/* Authoring toolbar floating over the board */
+.authoring-toolbar {
+  position: absolute;
+  top: 50px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: none;
+  align-items: center;
+  gap: 6px;
+  background: rgba(13, 17, 23, 0.95);
+  border: 1px solid var(--accent);
+  padding: 6px 12px;
+  border-radius: 999px;
+  z-index: 60;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+body[data-authoring="true"] .authoring-toolbar {
+  display: flex;
+}
+
+.authoring-toolbar button {
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-family: inherit;
+  transition: var(--transition);
+}
+
+.authoring-toolbar button:hover {
+  background: var(--accent);
+  color: var(--bg-primary);
+}
+
+.authoring-toolbar button.primary {
+  background: var(--accent);
+  color: var(--bg-primary);
+}
+
+.authoring-toolbar button.danger {
+  color: #ef4444;
+}
+
+.authoring-toolbar button.danger:hover {
+  background: #ef4444;
+  color: white;
+}
+
+.authoring-toolbar .separator {
+  width: 1px;
+  height: 16px;
+  background: var(--border);
+  margin: 0 4px;
+}
+
+/* ============================================
+   ENHANCED PUZZLE EDITOR
+   ============================================ */
+.editor-row {
+  margin-bottom: 10px;
+}
+
+.editor-row label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+  display: block;
+}
+
+.editor-row input,
+.editor-row textarea,
+.editor-row select {
+  width: 100%;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  padding: 7px 10px;
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 12px;
+  outline: none;
+  resize: vertical;
+  transition: var(--transition);
+}
+
+.editor-row input:focus,
+.editor-row textarea:focus,
+.editor-row select:focus {
+  border-color: var(--accent);
+  background: var(--bg-elevated);
+}
+
+.editor-row textarea {
+  font-family: inherit;
+  line-height: 1.5;
+  min-height: 60px;
+}
+
+.editor-row .row {
+  margin-bottom: 4px;
+  display: flex;
+  gap: 4px;
+}
+
+.editor-row .row .btn-mini {
+  flex: 1;
+}
+
+.fen-display {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  word-break: break-all;
+  background: var(--bg-primary);
+  padding: 6px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  line-height: 1.4;
+  max-height: 60px;
+  overflow-y: auto;
+}
+
+.fen-actions {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+/* Authoring mode entry buttons - more prominent */
+body[data-authoring="true"] .btn-authoring-only {
+  background: var(--accent);
+  color: var(--bg-primary);
+  border-color: var(--accent);
+}
+
+/* Puzzle list with better visuals */
+.library-puzzle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text-secondary);
+  transition: var(--transition);
+  border: 1px solid transparent;
+}
+
+.library-puzzle:hover {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  border-color: var(--border);
+}
+
+.library-puzzle.active {
+  background: rgba(232, 197, 71, 0.2);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.puzzle-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.puzzle-difficulty {
+  font-size: 9px;
+  letter-spacing: 0.5px;
+  color: var(--accent);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.library-puzzle.active .puzzle-difficulty {
+  color: var(--accent);
+}
+
+/* Empty state */
+.library-empty-state {
+  padding: 24px 16px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.library-empty-state .empty-icon {
+  font-size: 24px;
+  margin-bottom: 8px;
+  opacity: 0.6;
+}
+
+.library-empty-state .empty-text {
+  line-height: 1.5;
+}
+
+/* Chapter header with better visual */
+.library-chapter-header {
+  position: relative;
+}
+
+.chapter-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Active indicator dot */
+.active-indicator {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  display: inline-block;
+  margin-right: 4px;
+  box-shadow: 0 0 6px var(--accent);
+}
+
+/* Quick action row */
+.quick-actions {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.quick-actions button {
+  flex: 1;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  padding: 6px 4px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  transition: var(--transition);
+}
+
+.quick-actions button:hover {
+  background: var(--accent);
+  color: var(--bg-primary);
+  border-color: var(--accent);
+}

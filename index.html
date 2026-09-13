@@ -278,6 +278,30 @@
       </div>
     </div>
 
+    <!-- Authoring Toolbar (visible only in puzzle authoring mode) -->
+    <div class="authoring-toolbar">
+      <button id="btnAuthoringCapture" title="Capture current board position as puzzle start">
+        📸 Capture Position
+      </button>
+      <button id="btnAuthoringLoad" title="Load puzzle's FEN to board">
+        ⬇ Load
+      </button>
+      <span class="separator"></span>
+      <button id="btnAuthoringNew" title="Start new puzzle">
+        ➕ New
+      </button>
+      <button id="btnAuthoringSave" class="primary" title="Save puzzle">
+        💾 SAVE
+      </button>
+      <span class="separator"></span>
+      <button id="btnAuthoringTest" title="Test puzzle from student view">
+        ▶ Test
+      </button>
+      <button id="btnAuthoringExit" class="danger" title="Exit authoring mode">
+        ✕ Exit
+      </button>
+    </div>
+
     <!-- Puzzle Overlay -->
     <div class="puzzle-overlay hidden" id="puzzleOverlay">
       <div class="puzzle-card">
@@ -436,21 +460,29 @@
       <div class="panel-title">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
         Puzzle Editor
+        <button class="btn-icon-mini" id="btnToggleAuthoring" title="Enter Authoring Mode (P)">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v6M12 16v6M2 12h6M16 12h6"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+      </div>
+      <div class="quick-actions">
+        <button id="btnQuickChapter">+ Chapter</button>
+        <button id="btnQuickPuzzle">+ Puzzle</button>
+        <button id="btnQuickTest">▶ Test</button>
       </div>
       <div class="editor-row">
-        <label class="small-label">Title</label>
+        <label>Title</label>
         <input type="text" id="puzzleTitle" placeholder="e.g. Fork the king and queen" />
       </div>
       <div class="editor-row">
-        <label class="small-label">Description / Hint</label>
-        <textarea id="puzzleDescription" rows="2" placeholder="Hint for the student..."></textarea>
+        <label>Question / Hint for Student</label>
+        <textarea id="puzzleDescription" rows="2" placeholder="What should the player do here?"></textarea>
       </div>
       <div class="editor-row">
-        <label class="small-label">Solution (moves, SAN)</label>
+        <label>Solution (SAN moves, comma-separated)</label>
         <input type="text" id="puzzleSolution" placeholder="e.g. Nxe5, Qh5+, Rd1" />
       </div>
       <div class="editor-row">
-        <label class="small-label">Difficulty</label>
+        <label>Difficulty</label>
         <select id="puzzleDifficulty">
           <option value="1">★ Beginner</option>
           <option value="2">★★ Easy</option>
@@ -460,34 +492,35 @@
         </select>
       </div>
       <div class="editor-row">
-        <label class="small-label">Tags</label>
-        <input type="text" id="puzzleTags" placeholder="comma,separated,tags" />
+        <label>Tags (comma-separated)</label>
+        <input type="text" id="puzzleTags" placeholder="e.g. mate, fork, endgame" />
       </div>
       <div class="editor-row">
-        <label class="small-label">Position (FEN)</label>
-        <div class="row">
+        <label>Starting Position (FEN)</label>
+        <div class="fen-display" id="puzzleFenDisplay">No position set</div>
+        <div class="fen-actions">
           <button class="btn-mini" id="btnCapturePosition" title="Capture current board position">📸 Capture</button>
           <button class="btn-mini" id="btnLoadPosition" title="Load this FEN to board">⬇ Load</button>
         </div>
-        <textarea id="puzzleFen" rows="2" placeholder="FEN string..."></textarea>
+        <textarea id="puzzleFen" rows="2" placeholder="FEN string..." style="display:none"></textarea>
       </div>
       <div class="editor-row chapter-select-row">
-        <label class="small-label">Chapter</label>
+        <label>Chapter</label>
         <select id="puzzleChapterSelect">
           <!-- Filled by JS -->
         </select>
       </div>
+      <button class="btn-primary-full" id="btnSavePuzzle" style="margin-top: 8px">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        SAVE PUZZLE
+      </button>
       <div class="row">
-        <button class="btn-primary-full" id="btnSavePuzzle">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-          SAVE PUZZLE
-        </button>
-        <button class="btn-ghost-full" id="btnNewPuzzle">+ New</button>
-      </div>
-      <div class="row">
-        <button class="btn-ghost-full" id="btnTestPuzzle" title="Try the puzzle from student perspective">▶ Test as Student</button>
+        <button class="btn-ghost-full" id="btnNewPuzzle">+ New Puzzle</button>
         <button class="btn-ghost-full" id="btnDeletePuzzle" title="Delete this puzzle">🗑 Delete</button>
       </div>
+      <button class="btn-ghost-full" id="btnTestPuzzle" title="Try the puzzle from student perspective" style="margin-top: 4px">
+        ▶ Test as Student
+      </button>
     </div>
 
     <!-- Puzzle Mode -->

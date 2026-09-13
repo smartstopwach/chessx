@@ -68,6 +68,7 @@ const state = {
   clockHidden: false,
   engineHidden: false,
   setupMode: false,
+  authoringMode: false,
   selectedRackPiece: null,
   deletingMode: false,
   movesListData: [],
@@ -1374,6 +1375,7 @@ function loadPuzzleToEditor(puzzleId) {
   $('puzzleDifficulty').value = String(puzzle.difficulty || 3);
   $('puzzleTags').value = puzzle.tags || '';
   $('puzzleFen').value = puzzle.fen || '';
+  updateFenDisplay(puzzle.fen || '');
   $('puzzleChapterSelect').value = chapterId;
   toast(`Loaded puzzle: ${puzzle.title}`);
 }
@@ -1444,8 +1446,25 @@ function saveCurrentPuzzle() {
 }
 
 function captureCurrentPosition() {
-  $('puzzleFen').value = state.game.fen();
+  const fen = state.game.fen();
+  $('puzzleFen').value = fen;
+  updateFenDisplay(fen);
   toast('Position captured', 'success');
+}
+
+function updateFenDisplay(fen) {
+  const el = $('puzzleFenDisplay');
+  if (!el) return;
+  if (!fen) {
+    el.textContent = 'No position set';
+    el.classList.add('empty');
+    return;
+  }
+  el.classList.remove('empty');
+  el.textContent = fen;
+  // Add a brief highlight
+  el.style.borderColor = 'var(--accent)';
+  setTimeout(() => el.style.borderColor = '', 500);
 }
 
 function loadFENToBoard(fen) {
@@ -1462,18 +1481,7 @@ function loadFENToBoard(fen) {
 }
 
 function newPuzzle() {
-  // Clear the form for a fresh puzzle
-  $('puzzleTitle').value = '';
-  $('puzzleDescription').value = '';
-  $('puzzleSolution').value = '';
-  $('puzzleDifficulty').value = '3';
-  $('puzzleTags').value = '';
-  $('puzzleFen').value = state.game.fen();
-  const lib = getLibrary();
-  lib.activePuzzleId = null;
-  saveLibrary(lib);
-  renderLibrary($('librarySearch')?.value || '');
-  toast('New puzzle — fill in details and Save');
+  enterAuthoringForNewPuzzle();
 }
 
 function deleteCurrentPuzzle() {
@@ -1516,6 +1524,67 @@ function testPuzzleAsStudent() {
     overlay.classList.remove('hidden');
   }
   toast(`Testing puzzle: ${puz.title} — try to solve it!`);
+}
+
+// ============================================
+// AUTHORING MODE — distinct visual state when making puzzles
+// ============================================
+function setAuthoringMode(on) {
+  state.authoringMode = on;
+  document.body.dataset.authoring = on ? 'true' : 'false';
+  if (on) {
+    state.setupMode = true; // auto-enable setup mode
+    toast('Authoring Mode ON — set up your puzzle position', 'success');
+  } else {
+    toast('Authoring Mode OFF', 'success');
+  }
+  updateSetupHint();
+  // Show/hide authoring button
+  const btn = $('btnToggleAuthoring');
+  if (btn) btn.classList.toggle('active', on);
+}
+
+function isAuthoringMode() {
+  return state.authoringMode === true;
+}
+
+function enterAuthoringForNewPuzzle() {
+  // Create a new puzzle and enter authoring mode
+  const lib = getLibrary();
+  // Auto-create chapter if none exists
+  if (!lib.chapters.length) {
+    lib.chapters.push({ id: 'chapter-' + Date.now(), name: 'My Puzzles', expanded: true, puzzles: [] });
+  }
+  const chapId = lib.activeChapterId || lib.chapters[0].id;
+  const newP = {
+    id: 'puzzle-' + Date.now(),
+    title: 'New Puzzle',
+    description: '',
+    solution: '',
+    difficulty: 3,
+    tags: '',
+    fen: state.game.fen(),
+    chapterId: chapId,
+    createdAt: Date.now(),
+  };
+  const chap = lib.chapters.find(c => c.id === chapId);
+  chap.puzzles.push(newP);
+  lib.activeChapterId = chapId;
+  lib.activePuzzleId = newP.id;
+  chap.expanded = true;
+  saveLibrary(lib);
+  renderLibrary($('librarySearch')?.value || '');
+  renderChapterSelect();
+  loadPuzzleToEditor(newP.id);
+  setAuthoringMode(true);
+  // Scroll to editor panel
+  const panel = $('puzzleEditorPanel');
+  if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function exitAuthoringMode() {
+  setAuthoringMode(false);
+  toast('Exited authoring mode', 'success');
 }
 
 function exportLibrary() {
@@ -1808,6 +1877,11 @@ document.addEventListener('keydown', (e) => {
   if (e.target.matches('input, textarea, select')) return;
 
   switch (e.key) {
+    case 'p': case 'P':
+      // Toggle authoring mode
+      if (isAuthoringMode()) exitAuthoringMode();
+      else enterAuthoringForNewPuzzle();
+      break;
     case 'e': case 'E':
       // Toggle setup mode
       state.setupMode = !state.setupMode;
@@ -2091,6 +2165,21 @@ function doInit() {
   });
   $('btnSavePuzzle').addEventListener('click', saveCurrentPuzzle);
   $('btnNewPuzzle').addEventListener('click', newPuzzle);
+  $('btnToggleAuthoring').addEventListener('click', () => {
+    if (isAuthoringMode()) exitAuthoringMode();
+    else enterAuthoringForNewPuzzle();
+  });
+  $('btnQuickChapter').addEventListener('click', () => $('btnNewChapter').click());
+  $('btnQuickPuzzle').addEventListener('click', enterAuthoringForNewPuzzle);
+  $('btnQuickTest').addEventListener('click', testPuzzleAsStudent);
+
+  // Authoring toolbar buttons
+  $('btnAuthoringCapture').addEventListener('click', captureCurrentPosition);
+  $('btnAuthoringLoad').addEventListener('click', () => loadFENToBoard($('puzzleFen').value.trim()));
+  $('btnAuthoringSave').addEventListener('click', saveCurrentPuzzle);
+  $('btnAuthoringTest').addEventListener('click', testPuzzleAsStudent);
+  $('btnAuthoringNew').addEventListener('click', enterAuthoringForNewPuzzle);
+  $('btnAuthoringExit').addEventListener('click', exitAuthoringMode);
   $('btnDeletePuzzle').addEventListener('click', deleteCurrentPuzzle);
   $('btnCapturePosition').addEventListener('click', captureCurrentPosition);
   $('btnLoadPosition').addEventListener('click', () => loadFENToBoard($('puzzleFen').value.trim()));
