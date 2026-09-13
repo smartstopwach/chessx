@@ -933,42 +933,74 @@ textarea {
    ZOOM CONTROLS
    ============================================ */
 .zoom-controls {
-  position: absolute;
+  position: fixed;
   bottom: 20px;
-  right: 20px;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
   align-items: center;
-  gap: 6px;
-  background: var(--bg-panel);
-  border: 1px solid var(--border);
-  padding: 6px;
-  border-radius: var(--radius);
-  z-index: 8;
+  gap: 4px;
+  background: rgba(13, 17, 23, 0.95);
+  border: 1px solid var(--border-light);
+  padding: 6px 10px;
+  border-radius: 999px;
+  z-index: 100;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10px);
 }
 
 .zoom-btn {
-  width: 30px;
-  height: 30px;
-  background: var(--bg-tertiary);
+  width: 32px;
+  height: 32px;
+  background: var(--bg-elevated);
   border: 1px solid var(--border);
   color: var(--text-primary);
-  border-radius: 4px;
+  border-radius: 50%;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 700;
   transition: var(--transition);
   font-family: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
 }
 
-.zoom-btn:hover { background: var(--bg-elevated); border-color: var(--accent); }
+.zoom-btn:hover { background: var(--accent); color: var(--bg-primary); border-color: var(--accent); }
+.zoom-btn:active { transform: scale(0.92); }
+
+.zoom-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
 
 .zoom-level {
-  font-size: 12px;
-  color: var(--text-secondary);
-  font-weight: 600;
-  min-width: 50px;
+  font-size: 13px;
+  color: var(--text-primary);
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  min-width: 56px;
   text-align: center;
+  letter-spacing: 0.5px;
 }
+
+.zoom-reset {
+  background: transparent;
+  border: none;
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: var(--transition);
+  font-family: inherit;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.zoom-reset:hover { background: var(--bg-elevated); }
 
 /* ============================================
    ENGINE PANEL

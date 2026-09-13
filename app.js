@@ -1071,6 +1071,11 @@ function setZoom(z) {
   const size = Math.round(640 * state.zoom);
   els.boardContainer.style.setProperty('--board-size', size + 'px');
   $('zoomLevel').textContent = Math.round(state.zoom * 100) + '%';
+  // Disable buttons at limits
+  const out = $('btnZoomOut');
+  const inn = $('btnZoomIn');
+  if (out) out.disabled = state.zoom <= 0.6;
+  if (inn) inn.disabled = state.zoom >= 1.6;
   setTimeout(renderAnnotations, 50);
 }
 
@@ -1214,6 +1219,20 @@ document.addEventListener('keydown', (e) => {
         nextMove();
       }
       break;
+    case '+': case '=':
+      e.preventDefault();
+      setZoom(state.zoom + 0.1);
+      break;
+    case '-': case '_':
+      e.preventDefault();
+      setZoom(state.zoom - 0.1);
+      break;
+    case '0':
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        setZoom(1);
+      }
+      break;
   }
 });
 
@@ -1331,6 +1350,7 @@ function bindEvents() {
 
   $('btnZoomIn').addEventListener('click', () => setZoom(state.zoom + 0.1));
   $('btnZoomOut').addEventListener('click', () => setZoom(state.zoom - 0.1));
+  $('btnZoomReset').addEventListener('click', () => setZoom(1));
 
 
   window.addEventListener('resize', () => renderAnnotations());
