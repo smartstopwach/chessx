@@ -2028,7 +2028,9 @@ function bindEvents() {
 
   $('btnToggleTitle').addEventListener('click', () => {
     state.titleHidden = !state.titleHidden;
-    els.lessonHeader.style.display = state.titleHidden ? 'none' : 'flex';
+    document.body.classList.toggle('title-hidden', state.titleHidden);
+    els.lessonHeader.style.display = state.titleHidden ? 'none' : '';
+    toast(state.titleHidden ? 'Lesson header hidden' : 'Lesson header shown');
   });
 
   $('btnStartFromPosition').addEventListener('click', () => {

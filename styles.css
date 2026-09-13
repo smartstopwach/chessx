@@ -182,8 +182,15 @@ body {
    LESSON HEADER
    ============================================ */
 .lesson-header {
-  display: none; /* Hidden to maximize board space — focus on the chess board */
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
 }
+
+body.title-hidden .lesson-header { display: none; }
 
 .lesson-title {
   flex: 1;
@@ -276,7 +283,7 @@ body {
 
 .layout[data-layout="present"] { grid-template-columns: 0 1fr 0; padding: 4px; }
 .layout[data-layout="present"] .sidebar { display: none; }
-.layout[data-layout="present"] .lesson-header { display: none; }
+.layout[data-layout="present"] .lesson-header { display: none; }</old_text>
 
 /* ============================================
    SIDEBARS
