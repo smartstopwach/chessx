@@ -1442,6 +1442,14 @@ body[data-flipped="true"] .board .coord {
   font-size: 11px;
 }
 
+.library-empty-chapter {
+  padding: 6px 10px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-style: italic;
+}
+
 .library-chapter {
   margin-bottom: 2px;
 }

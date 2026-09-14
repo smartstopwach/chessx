@@ -1089,6 +1089,11 @@ function renderLibrary(filter = '') {
       </div>
       <div class="library-puzzles">`;
 
+    if (puzzles.length === 0) {
+      // No puzzles in this chapter — show empty hint inside
+      html += '<div class="library-empty-chapter">No puzzles yet — click + on the chapter header to add one</div>';
+    }
+
     for (const puz of puzzles) {
       const isActivePuz = puz.id === lib.activePuzzleId;
       html += `<div class="library-puzzle ${isActivePuz ? 'active' : ''}" data-action="select-puzzle" data-puzzle-id="${puz.id}" data-chapter-id="${chap.id}">
