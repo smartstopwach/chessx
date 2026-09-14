@@ -379,6 +379,14 @@ function renderAnnotations() {
 // ============================================
 // BOARD INTERACTIONS
 // ============================================
+// Mouse drag tracking — left mouse ALWAYS draws arrows on drag,
+// and a quick click (no drag) does chess move.
+// This applies regardless of which tool is selected.
+let mouseDownSquare = null;
+let mouseDownTime = 0;
+let didDrag = false;
+const DRAG_THRESHOLD_MS = 150;
+
 function onSquareMouseDown(e) {
   if (!e.target.closest('.square')) return;
   const sq = e.target.closest('.square');
@@ -467,45 +475,35 @@ function onSquareMouseDown(e) {
     return;
   }
 
+  // Track drag start for ALL clicks in normal mode
+  mouseDownSquare = sqName;
+  mouseDownTime = Date.now();
+  didDrag = false;
+
+  // If we're using circle/highlight/eraser tools, these are click-only — no drag needed
+  if (state.currentTool === 'circle') {
+    addCircle(sqName);
+    return;
+  }
+  if (state.currentTool === 'highlight') {
+    addHighlight(sqName);
+    return;
+  }
+  if (state.currentTool === 'eraser') {
+    eraseAnnotationAt(sqName);
+    return;
+  }
+
+  // For arrow, rectangle, select tools: prepare for potential drag OR click
   if (state.currentTool === 'arrow' || state.currentTool === 'rectangle') {
     state.drawingFrom = sqName;
     state.isDrawing = true;
     return;
   }
 
-  if (state.currentTool === 'circle') {
-    addCircle(sqName);
-    return;
-  }
-
-  if (state.currentTool === 'highlight') {
-    addHighlight(sqName);
-    return;
-  }
-
-  if (state.currentTool === 'eraser') {
-    eraseAnnotationAt(sqName);
-    return;
-  }
-
-  // Select tool
-  if (state.selectedSquare === sqName) {
-    state.selectedSquare = null;
-    highlightSquares();
-    return;
-  }
-
-  if (state.selectedSquare) {
-    tryMakeMove(state.selectedSquare, sqName);
-  } else {
-    try {
-      const piece = state.game.get(sqName);
-      if (piece && piece.color === state.game.turn()) {
-        state.selectedSquare = sqName;
-        highlightSquares();
-      }
-    } catch (e) {}
-  }
+  // Select tool: don't immediately select — wait for mouseup to detect if drag
+  // (this lets drag ALWAYS work as arrow even when in select tool)
+  // We'll handle this in mouseup based on whether didDrag is true.
 }
 
 function onSquareMouseUp(e) {
@@ -513,6 +511,10 @@ function onSquareMouseUp(e) {
   const sq = e.target.closest('.square');
   const sqName = sq.dataset.square;
 
+  // Detect drag: mousedown and mouseup on different squares = drag
+  const isDrag = mouseDownSquare && mouseDownSquare !== sqName;
+
+  // Drawing arrows/rectangles: from mousedown's drawingFrom to mouseup's sqName
   if (state.isDrawing && state.drawingFrom) {
     if (state.drawingFrom !== sqName) {
       if (state.currentTool === 'arrow') {
@@ -524,7 +526,41 @@ function onSquareMouseUp(e) {
     state.drawingFrom = null;
     state.isDrawing = false;
     renderAnnotations();
+    mouseDownSquare = null;
+    return;
   }
+
+  // For select tool: if user dragged (mousedown on different square than mouseup),
+  // treat it as an arrow draw — regardless of current tool. This is the key behavior.
+  if (isDrag && state.currentTool === 'select' && !state.setupMode && !isAuthoringMode()) {
+    addArrow(mouseDownSquare, sqName);
+    renderAnnotations();
+    mouseDownSquare = null;
+    return;
+  }
+
+  // If this was a CLICK (no drag), handle chess move / piece selection
+  if (!isDrag) {
+    // Click on selected square = deselect
+    if (state.selectedSquare === sqName) {
+      state.selectedSquare = null;
+      highlightSquares();
+    } else if (state.selectedSquare) {
+      // Click on destination with a piece selected = try chess move
+      tryMakeMove(state.selectedSquare, sqName);
+    } else {
+      // No piece selected — try to select this piece if it belongs to current player
+      try {
+        const piece = state.game.get(sqName);
+        if (piece && piece.color === state.game.turn()) {
+          state.selectedSquare = sqName;
+          highlightSquares();
+        }
+      } catch (e) {}
+    }
+  }
+
+  mouseDownSquare = null;
 }
 
 function tryMakeMove(from, to) {
@@ -2611,14 +2647,12 @@ function setMode(mode) {
     enterAuthoringForNewPuzzle();
     setTimeout(autoFitBoard, 50);
   } else if (mode === 'setup') {
-    // Custom setup mode: show yellow position setup on left, allow save
-    document.body.dataset.authoring = 'true';
-    enterAuthoringForNewPuzzle();
-    // In setup mode, make sure the LEFT sidebar (yellow) shows instead of blue puzzle one
-    // We'll do this by body data attribute
+    // Custom setup mode: just show the yellow Position Setup on left
+    // NO authoring mode (no authoring toolbar), NO puzzle editor, NO library
+    // Just a clean Position Setup + FEN panel + board to play with
+    document.body.dataset.authoring = 'false';
     document.body.dataset.mode = 'setup';
-    setTimeout(autoFitBoard, 50);
-    toast('Custom Setup mode — yellow rack on left, play out a position', 'success');
+    toast('Custom Setup — drag pieces to set up a position', 'success');
   }
   renderAll();
 }

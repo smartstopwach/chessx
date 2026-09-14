@@ -2295,6 +2295,19 @@ body[data-mode="setup"] .layout[data-layout="focus"] .sidebar-right {
   grid-column: 3 !important;
 }
 
+/* ============================================
+   SETUP MODE: HIDE puzzle editor, library, move list,
+   chess clock, engine analysis. Only show what's needed
+   for setting up a position: Position Setup + FEN.
+   ============================================ */
+body[data-mode="setup"] #puzzleEditorPanel,
+body[data-mode="setup"] #libraryPanel,
+body[data-mode="setup"] #enginePanel,
+body[data-mode="setup"] #movePanel,
+body[data-mode="setup"] #clockPanel {
+  display: none !important;
+}
+
 /* When in puzzle mode, HIDE all panels that have no purpose in puzzle editing
    (Drawing Tools, Themes, yellow Position Setup + yellow FEN — replaced by blue puzzle setup) */
 body[data-authoring="true"] #leftSidebar .position-editor,
