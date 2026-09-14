@@ -26,7 +26,6 @@
   </div>
 
   <nav class="topbar-actions">
-    <button class="btn-ghost" id="btnToggleSetup" title="Setup Mode (E)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg><span>Setup</span></button>
     <button class="btn-ghost" id="btnToggleLeftSidebar" title="Toggle Tools (T)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg><span>Tools</span></button>
     <button class="btn-ghost" id="btnFlip" title="Flip Board (F)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 12l4-4M3 12l4 4M21 12l-4-4M21 12l-4 4"/></svg><span>Flip</span></button>
     <button class="btn-ghost" id="btnReset" title="Reset (R)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg><span>Reset</span></button>
@@ -35,11 +34,6 @@
     <button class="btn-ghost" id="btnFullscreen" title="Fullscreen"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8V3h5M21 8V3h-5M3 16v5h5M21 16v5h-5"/></svg><span>Full</span></button>
   </nav>
 </header>
-<section class="lesson-header" id="lessonHeader">
-  <input type="text" class="lesson-title" id="lessonTitle" placeholder="Lesson Title (e.g. How to Play the Italian Game)" />
-  <input type="text" class="lesson-subtitle" id="lessonSubtitle" placeholder="Subtitle (e.g. Understanding the Main Ideas)" />
-  <button class="btn-icon" id="btnToggleTitle" title="Hide Title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
-</section>
 
 <!-- ================= MAIN LAYOUT ================= -->
 <main class="layout" id="layout" data-layout="focus">
@@ -168,19 +162,6 @@
         <button class="btn-ghost-full" id="btnLoadFen">Load FEN</button>
         <button class="btn-ghost-full" id="btnCopyFen">Copy</button>
       </div>
-    </div>
-
-    <div class="panel">
-      <div class="panel-title">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
-        Bookmarks
-      </div>
-      <div id="bookmarkList" class="bookmark-list"></div>
-      <div class="row">
-        <button class="btn-ghost-full" id="btnPrevBookmark" title="Previous (P)">← Prev</button>
-        <button class="btn-ghost-full" id="btnNextBookmark" title="Next (N)">Next →</button>
-      </div>
-      <button class="btn-primary-full" id="btnSaveBookmark">+ Save Position</button>
     </div>
 
     <div class="panel">
@@ -380,18 +361,6 @@
       </div>
     </div>
 
-    <!-- Teacher Notes -->
-    <div class="panel" id="notesPanel">
-      <div class="panel-title">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-        Teacher Notes
-        <button class="btn-icon-mini" id="btnToggleNotes" title="Hide Notes">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><line x1="2" y1="2" x2="22" y2="22"/></svg>
-        </button>
-      </div>
-      <textarea id="teacherNotes" placeholder="Write your lesson explanations here...&#10;&#10;e.g.&#10;White wants to control the center.&#10;Knight attacks e5.&#10;Black should castle."></textarea>
-    </div>
-
     <!-- Chess Clock -->
     <div class="panel" id="clockPanel">
       <div class="panel-title">
@@ -541,22 +510,6 @@
       </details>
     </div>
 
-    <!-- Lesson Save/Load -->
-    <div class="panel" id="lessonPanel">
-      <div class="panel-title">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-        Lesson
-      </div>
-      <div class="row">
-        <button class="btn-primary-full" id="btnSaveLesson">Save Lesson</button>
-        <button class="btn-ghost-full" id="btnLoadLesson">Load</button>
-      </div>
-      <div class="row">
-        <button class="btn-ghost-full" id="btnExportPgn">Export PGN</button>
-        <button class="btn-ghost-full" id="btnImportLesson">Import</button>
-      </div>
-      <input type="file" id="fileInput" accept=".json,.pgn" style="display:none" />
-    </div>
   </aside>
 </main>
 

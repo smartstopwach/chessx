@@ -55,15 +55,12 @@ const state = {
   boardTheme: 'classic',
   pieceStyle: 'alpha',
   boardSize: 640,
-  bookmarks: [],
   variations: [],
   currentVariation: 'main',
   puzzle: null,
   clock: { wTime: 600, bTime: 600, running: false, activeColor: 'w', interval: null },
   layout: 'focus',
   uiHidden: false,
-  titleHidden: false,
-  notesHidden: false,
   clockHidden: false,
   engineHidden: false,
   setupMode: false,
@@ -97,13 +94,9 @@ const els = {
   boardContainer: $('boardContainer'),
   boardArea: $('boardArea'),
   layout: $('layout'),
-  lessonHeader: $('lessonHeader'),
-  lessonTitle: $('lessonTitle'),
-  lessonSubtitle: $('lessonSubtitle'),
   topbar: $('topbar'),
   movesList: $('movesList'),
   fenInput: $('fenInput'),
-  teacherNotes: $('teacherNotes'),
   puzzleOverlay: $('puzzleOverlay'),
   puzzleQuestion: $('puzzleQuestion'),
   puzzleAnswer: $('puzzleAnswer'),
@@ -951,176 +944,6 @@ function loadFen() {
   } catch (e) {
     toast('Invalid FEN', 'error');
   }
-}
-
-// ============================================
-// BOOKMARKS
-// ============================================
-function saveBookmark() {
-  const name = prompt('Bookmark name:', `Position ${state.bookmarks.length + 1}`);
-  if (!name) return;
-  state.bookmarks.push({
-    name,
-    fen: state.game.fen(),
-    pgn: state.game.pgn(),
-    arrows: [...state.arrows],
-    circles: [...state.circles],
-    highlights: [...state.highlights],
-    rectangles: [...state.rectangles]
-  });
-  renderBookmarks();
-  toast('Position saved', 'success');
-}
-
-function renderBookmarks() {
-  const list = $('bookmarkList');
-  list.innerHTML = '';
-  state.bookmarks.forEach((bm, i) => {
-    const item = document.createElement('div');
-    item.className = 'bookmark-item';
-    item.innerHTML = `
-      <span class="bm-name">${bm.name}</span>
-      <button class="bm-del">✕</button>
-    `;
-    item.querySelector('.bm-name').addEventListener('click', () => loadBookmark(i));
-    item.querySelector('.bm-del').addEventListener('click', (e) => {
-      e.stopPropagation();
-      state.bookmarks.splice(i, 1);
-      renderBookmarks();
-    });
-    list.appendChild(item);
-  });
-}
-
-function loadBookmark(idx) {
-  const bm = state.bookmarks[idx];
-  if (!bm) return;
-  try {
-    state.game.load(bm.fen);
-    state.history = [];
-    state.historyIndex = -1;
-    state.arrows = [...bm.arrows];
-    state.circles = [...bm.circles];
-    state.highlights = [...bm.highlights];
-    state.rectangles = [...bm.rectangles];
-    renderAll();
-    toast(`Loaded: ${bm.name}`, 'success');
-  } catch (e) {
-    toast('Error loading bookmark', 'error');
-  }
-}
-
-let bookmarkCursor = -1;
-function nextBookmark() {
-  if (state.bookmarks.length === 0) return;
-  bookmarkCursor = (bookmarkCursor + 1) % state.bookmarks.length;
-  loadBookmark(bookmarkCursor);
-}
-
-function prevBookmark() {
-  if (state.bookmarks.length === 0) return;
-  bookmarkCursor = (bookmarkCursor - 1 + state.bookmarks.length) % state.bookmarks.length;
-  loadBookmark(bookmarkCursor);
-}
-
-// ============================================
-// LESSON SAVE / LOAD
-// ============================================
-function saveLesson() {
-  const lesson = {
-    title: els.lessonTitle.value,
-    subtitle: els.lessonSubtitle.value,
-    fen: state.game.fen(),
-    pgn: state.game.pgn(),
-    arrows: state.arrows,
-    circles: state.circles,
-    highlights: state.highlights,
-    rectangles: state.rectangles,
-    notes: els.teacherNotes.value,
-    bookmarks: state.bookmarks,
-    theme: state.boardTheme,
-    pieceStyle: state.pieceStyle
-  };
-  const json = JSON.stringify(lesson, null, 2);
-  const blob = new Blob([json], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${els.lessonTitle.value || 'chess-lesson'}.chessx.json`;
-  a.click();
-  URL.revokeObjectURL(url);
-
-  try { localStorage.setItem('chessx_current_lesson', json); } catch (e) {}
-  toast('Lesson saved', 'success');
-}
-
-function loadLesson() {
-  $('fileInput').click();
-}
-
-function importLessonFile(file) {
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    try {
-      const lesson = JSON.parse(e.target.result);
-      applyLesson(lesson);
-      toast('Lesson loaded', 'success');
-    } catch (err) {
-      try {
-        state.game.load_pgn(e.target.result);
-        // Rebuild history from loaded PGN
-        state.history = state.game.history();
-        state.historyIndex = state.history.length - 1;
-        renderAll();
-        toast('PGN loaded', 'success');
-      } catch (err2) {
-        toast('Could not parse file', 'error');
-      }
-    }
-  };
-  reader.readAsText(file);
-}
-
-function applyLesson(lesson) {
-  if (lesson.title) els.lessonTitle.value = lesson.title;
-  if (lesson.subtitle) els.lessonSubtitle.value = lesson.subtitle;
-  if (lesson.fen) {
-    state.game.load(lesson.fen);
-    state.history = [];
-    state.historyIndex = -1;
-  }
-  if (lesson.arrows) state.arrows = lesson.arrows;
-  if (lesson.circles) state.circles = lesson.circles;
-  if (lesson.highlights) state.highlights = lesson.highlights;
-  if (lesson.rectangles) state.rectangles = lesson.rectangles;
-  if (lesson.notes) els.teacherNotes.value = lesson.notes;
-  if (lesson.bookmarks) state.bookmarks = lesson.bookmarks;
-  if (lesson.theme) setTheme(lesson.theme);
-  if (lesson.pieceStyle) state.pieceStyle = lesson.pieceStyle;
-  renderAll();
-  renderBookmarks();
-}
-
-function exportPgn() {
-  const pgn = state.game.pgn();
-  const blob = new Blob([pgn], { type: 'text/plain' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${els.lessonTitle.value || 'game'}.pgn`;
-  a.click();
-  URL.revokeObjectURL(url);
-  toast('PGN exported', 'success');
-}
-
-function autoLoadLesson() {
-  try {
-    const saved = localStorage.getItem('chessx_current_lesson');
-    if (saved) {
-      const lesson = JSON.parse(saved);
-      applyLesson(lesson);
-    }
-  } catch (e) {}
 }
 
 // ============================================
@@ -2008,8 +1831,6 @@ document.addEventListener('keydown', (e) => {
     case 'e': case 'E': setTool('eraser'); break;
     case 'v': case 'V': setTool('select'); break;
     case 'h': case 'H': setTool('highlight'); break;
-    case 'n': case 'N': nextBookmark(); break;
-    case 'p': case 'P': prevBookmark(); break;
     case 'z': case 'Z':
       if (e.ctrlKey || e.metaKey) {
         e.preventDefault();
@@ -2034,7 +1855,6 @@ function renderAll() {
   highlightSquares();
   renderMovesList();
   updateFen();
-  renderBookmarks();
 }
 
 // ============================================
@@ -2061,13 +1881,6 @@ function bindEvents() {
   }));
   $('btnClearAnnotations').addEventListener('click', clearAllAnnotations);
 
-  $('btnToggleTitle').addEventListener('click', () => {
-    state.titleHidden = !state.titleHidden;
-    document.body.classList.toggle('title-hidden', state.titleHidden);
-    els.lessonHeader.style.display = state.titleHidden ? 'none' : '';
-    toast(state.titleHidden ? 'Lesson header hidden' : 'Lesson header shown');
-  });
-
   $('btnStartFromPosition').addEventListener('click', () => {
     state.setupMode = false;
     state.heldPiece = null;
@@ -2083,19 +1896,6 @@ function bindEvents() {
     requestEngineEval();
     toast('Position set', 'success');
   });
-  // Setup mode toggle button (topbar)
-  $('btnToggleSetup').addEventListener('click', () => {
-    state.setupMode = !state.setupMode;
-    if (!state.setupMode) {
-      state.heldPiece = null;
-      state.selectedRackPiece = null;
-      $$('.rack-piece').forEach(x => x.classList.remove('selected'));
-      $$('.square').forEach(sq => sq.classList.remove('drop-target'));
-    }
-    $('btnToggleSetup').classList.toggle('active', state.setupMode);
-    toast(state.setupMode ? 'Setup Mode: ON — click/drag to edit position' : 'Setup Mode: OFF — play moves normally');
-    updateSetupHint();
-  });
 
   // Position setup advanced controls
   $('btnSetupUndo').addEventListener('click', setupUndo);
@@ -2109,10 +1909,6 @@ function bindEvents() {
 
   $('btnLoadFen').addEventListener('click', loadFen);
   $('btnCopyFen').addEventListener('click', copyFen);
-
-  $('btnSaveBookmark').addEventListener('click', saveBookmark);
-  $('btnPrevBookmark').addEventListener('click', prevBookmark);
-  $('btnNextBookmark').addEventListener('click', nextBookmark);
 
   $('btnPrevMove').addEventListener('click', prevMove);
   $('btnNextMove').addEventListener('click', nextMove);
@@ -2137,11 +1933,6 @@ function bindEvents() {
   $$('.theme-btn').forEach(b => b.addEventListener('click', () => setTheme(b.dataset.theme)));
   $('pieceStyle').addEventListener('change', (e) => { state.pieceStyle = e.target.value; renderBoard(); });
 
-  $('btnToggleNotes').addEventListener('click', () => {
-    state.notesHidden = !state.notesHidden;
-    $('teacherNotes').style.display = state.notesHidden ? 'none' : 'block';
-  });
-
   $$('[data-clock]').forEach(b => b.addEventListener('click', () => {
     setClock(parseInt(b.dataset.time));
     if (state.clock.running) toggleClock();
@@ -2155,14 +1946,6 @@ function bindEvents() {
   $('btnToggleClock').addEventListener('click', () => {
     state.clockHidden = !state.clockHidden;
     $('clockPanel').querySelector('.clocks').style.display = state.clockHidden ? 'none' : 'grid';
-  });
-
-  $('btnSaveLesson').addEventListener('click', saveLesson);
-  $('btnLoadLesson').addEventListener('click', loadLesson);
-  $('btnExportPgn').addEventListener('click', exportPgn);
-  $('btnImportLesson').addEventListener('click', () => $('fileInput').click());
-  $('fileInput').addEventListener('change', (e) => {
-    if (e.target.files[0]) importLessonFile(e.target.files[0]);
   });
 
   // Zoom buttons removed — board auto-fits to available space
@@ -2320,7 +2103,6 @@ function doInit() {
   setTimeout(() => safeCall('initEngine', initEngine), 50);
 
   safeCall('updateClocks', updateClocks);
-  safeCall('autoLoadLesson', autoLoadLesson);
 
   console.log('ChessX initialized successfully');
 }
