@@ -2944,6 +2944,25 @@ body.on-front-page .topbar .topbar-actions {
   visibility: hidden;
 }
 
+/* ============================================
+   NORMAL MODE: only Drawing + Theme on left,
+   Analysis + Move List + Clock on right
+   ============================================ */
+/* Hide position setup, FEN, library, puzzle editor in normal mode */
+body[data-mode="normal"] #yellowPositionSetupPanel,
+body[data-mode="normal"] #yellowFenPanel,
+body[data-mode="normal"] #libraryPanel,
+body[data-mode="normal"] #puzzleEditorPanel {
+  display: none !important;
+}
+/* Force left sidebar to start hidden in normal mode */
+body[data-mode="normal"] #leftSidebar {
+  display: none !important;
+}
+body[data-mode="normal"] .layout.left-sidebar-visible #leftSidebar {
+  display: flex !important;
+}
+
 /* Responsive: 1 column on small screens */
 @media (max-width: 900px) {
   .mode-cards { grid-template-columns: 1fr; }
