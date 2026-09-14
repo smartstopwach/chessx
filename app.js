@@ -1930,7 +1930,17 @@ function enterAuthoringForNewPuzzle() {
   state.game.reset();
   state.history = [];
   state.historyIndex = -1;
-  renderAll();
+  state.selectedSquare = null;
+  state.heldPiece = null;
+  state.selectedRackPiece = null;
+  $$('.rack-piece').forEach(x => x.classList.remove('selected'));
+  clearAllAnnotations();
+  // Force re-render of the board explicitly
+  renderBoard();
+  renderAnnotations();
+  highlightSquares();
+  updateFen();
+  setTimeout(autoFitBoard, 50);
 
   // Set chapter dropdown to active or first
   const chapId = lib.activeChapterId || lib.chapters[0].id;
