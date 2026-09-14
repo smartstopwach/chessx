@@ -1173,6 +1173,30 @@ function handleLibraryAction(action, chapterId, puzzleId) {
     renderLibrary($('librarySearch')?.value || '');
     loadPuzzleToEditor(puzzleId);
   } else if (action === 'add-puzzle') {
+    // Same as + New Puzzle button — enter authoring mode with fresh state
+    // Reset main board to standard so user gets a clean slate
+    state.game.reset();
+    state.history = [];
+    state.historyIndex = -1;
+    state.selectedSquare = null;
+    state.heldPiece = null;
+    state.selectedRackPiece = null;
+    $$('.rack-piece').forEach(x => x.classList.remove('selected'));
+    clearAllAnnotations();
+
+    // Reset the puzzle editor's independent state to standard
+    if (puzzleGame()) {
+      puzzleGame().load('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1');
+      puzzleState.history = [];
+      puzzleState.historyIndex = -1;
+      puzzleState.heldPiece = null;
+      puzzleState.selectedSquare = null;
+      peSetupPushHistory();
+      peUpdatePieceCount();
+      peUpdateHint();
+    }
+
+    // Create the new puzzle with auto-name and standard position
     const newPuzzle = {
       id: uniqueId('puzzle'),
       title: autoName('Puzzle', lib),
@@ -1180,7 +1204,7 @@ function handleLibraryAction(action, chapterId, puzzleId) {
       solution: '',
       difficulty: 3,
       tags: '',
-      fen: state.game.fen(),
+      fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
       chapterId,
       createdAt: Date.now(),
     };
@@ -1192,8 +1216,34 @@ function handleLibraryAction(action, chapterId, puzzleId) {
       chap.expanded = true;
       saveLibrary(lib);
       renderLibrary($('librarySearch')?.value || '');
-      loadPuzzleToEditor(newPuzzle.id);
+      // Set the form fields directly with standard FEN
+      $('puzzleTitle').value = '';
+      $('puzzleDescription').value = '';
+      $('puzzleSolution').value = '';
+      $('puzzleDifficulty').value = '3';
+      $('puzzleTags').value = '';
+      $('puzzleFen').value = newPuzzle.fen;
+      updateFenDisplay(newPuzzle.fen);
+      $('puzzleChapterSelect').value = chapterId;
+      // Sync the puzzle editor's independent state with the new FEN
+      if (puzzleGame()) {
+        puzzleGame().load(newPuzzle.fen);
+        puzzleState.history = [];
+        puzzleState.historyIndex = -1;
+        puzzleState.heldPiece = null;
+        puzzleState.selectedSquare = null;
+        peSetupPushHistory();
+        peUpdatePieceCount();
+        peUpdateHint();
+      }
+      // Set authoring mode BEFORE re-render
       setAuthoringMode(true);
+      // Re-render the board explicitly
+      renderBoard();
+      renderAnnotations();
+      highlightSquares();
+      updateFen();
+      setTimeout(autoFitBoard, 50);
       // Scroll to editor panel
       const panel = $('puzzleEditorPanel');
       if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
