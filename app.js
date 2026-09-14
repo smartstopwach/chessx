@@ -379,205 +379,337 @@ function renderAnnotations() {
 // ============================================
 // BOARD INTERACTIONS
 // ============================================
-// Mouse drag tracking — left mouse ALWAYS draws arrows on drag,
-// and a quick click (no drag) does chess move.
-// This applies regardless of which tool is selected.
-let mouseDownSquare = null;
-let mouseDownTime = 0;
-let didDrag = false;
-const DRAG_THRESHOLD_MS = 150;
+// One unified "press → release" model for mouse AND touch:
+//   • press + release on the SAME square  → CLICK  → select piece / make chess move
+//   • press on one square, release on another → DRAG → draw an arrow
+// A tiny hand wobble while clicking must NOT be mistaken for a drag, so the
+// release square only counts as a drag target once the pointer has actually
+// travelled more than DRAG_SLOP_PX.
+const DRAG_SLOP_PX = 10;
+
+let pressSquare = null;    // square the pointer went down on
+let pressX = 0;
+let pressY = 0;
+let pressMoved = false;    // pointer travelled past the slop -> this is a real drag
+let pressConsumed = false; // a mode already acted on the press -> ignore the release
+let touchHandledPress = false;
 
 function onSquareMouseDown(e) {
-  if (!e.target.closest('.square')) return;
-  const sq = e.target.closest('.square');
+  // Stop the browser from starting a native image/text drag or a text
+  // selection — either one silently swallows the matching mouseup and the
+  // move never happens.
+  if (e.cancelable) e.preventDefault();
+  // preventDefault() also blocks the usual focus change, so drop the caret out
+  // of any text field by hand — otherwise the keyboard shortcuts stay muted
+  // (they ignore keys while an input has focus) after typing in the FEN box.
+  const ae = document.activeElement;
+  if (ae && ae !== document.body && typeof ae.blur === 'function' &&
+      ae.matches('input, textarea, select')) {
+    ae.blur();
+  }
+  beginSquarePress(e.target.closest('.square'), e.clientX, e.clientY, e.button);
+}
+
+function onSquareMouseMove(e) {
+  if (pressSquare === null || pressMoved) return;
+  if (Math.abs(e.clientX - pressX) > DRAG_SLOP_PX ||
+      Math.abs(e.clientY - pressY) > DRAG_SLOP_PX) {
+    pressMoved = true;
+  }
+}
+
+function onSquareMouseUp(e) {
+  endSquarePress(e.target.closest('.square'), e.clientX, e.clientY);
+}
+
+// Touch: phones/tablets fire synthetic mouse events after a tap, and those can
+// land on the wrong square (or not at all once the page scrolls). Handle the
+// touch directly and swallow the emulated mouse pair for this tap.
+function onTouchStart(e) {
+  if (e.touches.length !== 1) return;
+  const t = e.touches[0];
+  touchHandledPress = true;
+  beginSquarePress(document.elementFromPoint(t.clientX, t.clientY), t.clientX, t.clientY, 0);
+}
+
+function onTouchMove(e) {
+  if (!touchHandledPress || e.touches.length !== 1) return;
+  const t = e.touches[0];
+  if (pressSquare !== null && !pressMoved &&
+      (Math.abs(t.clientX - pressX) > DRAG_SLOP_PX ||
+       Math.abs(t.clientY - pressY) > DRAG_SLOP_PX)) {
+    pressMoved = true;
+  }
+  // Only claim the gesture once it really is a drag (arrow drawing), so the
+  // page can still be scrolled with a plain swipe.
+  if (pressMoved) e.preventDefault();
+}
+
+function onTouchEnd(e) {
+  if (!touchHandledPress) return;
+  touchHandledPress = false;
+  const t = (e.changedTouches && e.changedTouches[0]) || null;
+  const target = t ? document.elementFromPoint(t.clientX, t.clientY) : null;
+  if (pressMoved) e.preventDefault();
+  endSquarePress(target ? target.closest('.square') : null, t ? t.clientX : 0, t ? t.clientY : 0);
+}
+
+function beginSquarePress(sq, x, y, button) {
+  pressConsumed = false;
+
+  if (!sq) return;
   const sqName = sq.dataset.square;
 
-  // AUTHORING MODE (puzzle edit):
-  // - Click on rack piece → hold it. Click on board square → place that piece anywhere (rule-free)
-  // - Click on board piece → select it (you can move it anywhere by clicking another square)
-  // - Click on empty square with no held piece → make a legal chess move if possible
-  // - Right-click on board → erase piece
-  // All actions work directly on the main board (state.game).
+  // Right-click never starts a drag/press gesture.
+  if (button === 2) {
+    pressConsumed = true;
+    if (state.setupMode) erasePieceAt(sqName);
+    return;
+  }
+
+  pressSquare = sqName;
+  pressX = x || 0;
+  pressY = y || 0;
+  pressMoved = false;
+
+  // AUTHORING MODE (puzzle edit) acts on the PRESS, so the matching release
+  // must not be replayed as a second click (that used to deselect the piece
+  // the instant it was picked up).
+  //   rack piece held -> place it anywhere | board piece -> select / move it
+  //   freely | illegal target -> select the piece just clicked instead.
   if (isAuthoringMode()) {
-    e.stopPropagation();
-    e.preventDefault();
+    pressConsumed = true;
 
-    // Right-click: erase piece
-    if (e.button === 2) {
-      peErasePiece(sqName);
-      // Also keep puzzleGame in sync
-      if (puzzleGame()) puzzleGame().load(state.game.fen());
-      return;
-    }
-
-    // If holding a piece from RACK (source === null or 'rack'), place it freely
     if (puzzleState.heldPiece && !puzzleState.heldPiece.source) {
-      // Place the rack piece on the main board (rule-free)
       pePlacePiece(sqName, puzzleState.heldPiece.piece);
-      // Sync puzzleGame with main board
       if (puzzleGame()) puzzleGame().load(state.game.fen());
       return;
     }
 
-    // No held piece: try to make a chess move OR select a piece
     const piece = getPieceAt(sqName);
 
     if (!state.selectedSquare) {
-      // First click — select the piece if any
-      if (piece) {
-        state.selectedSquare = sqName;
-      }
+      if (piece) state.selectedSquare = sqName;
       highlightSquares();
       return;
     }
 
     if (state.selectedSquare === sqName) {
-      // Clicked same square — deselect
       state.selectedSquare = null;
       highlightSquares();
       return;
     }
 
-    // Try to make a legal move on the main board
-    const result = peMakeMove(state.selectedSquare, sqName);
-    if (!result) {
-      // Move was illegal (king would be in check, or piece can't move there)
-      // Try selecting the new square instead
-      if (piece) {
-        state.selectedSquare = sqName;
-      } else {
-        state.selectedSquare = null;
-      }
+    if (!peMakeMove(state.selectedSquare, sqName)) {
+      state.selectedSquare = piece ? sqName : null;
       highlightSquares();
     }
     return;
   }
 
-  // Right-click in setup mode = erase piece
-  if (e.button === 2 && state.setupMode) {
-    erasePieceAt(sqName);
-    return;
-  }
-
+  // SETUP MODE - hold/place pieces; a click on a board piece picks it up.
   if (state.setupMode) {
-    // If holding a piece (from rack OR from board), place it
+    pressConsumed = true;
     if (state.heldPiece) {
       placePieceOnSetup(sqName, state.heldPiece.piece);
       return;
     }
-    // Otherwise, single-click on a piece = pick it up (fast workflow)
-    const existingPiece = getPieceAt(sqName);
-    if (existingPiece) {
-      pickPieceFromBoard(sqName);
-      return;
-    }
-    // Click on empty square with nothing held = no-op
+    if (getPieceAt(sqName)) pickPieceFromBoard(sqName);
     return;
   }
 
-  // Track drag start for ALL clicks in normal mode
-  mouseDownSquare = sqName;
-  mouseDownTime = Date.now();
-  didDrag = false;
+  // Click-only annotation tools act on the press too.
+  if (state.currentTool === 'circle')    { pressConsumed = true; addCircle(sqName); return; }
+  if (state.currentTool === 'highlight') { pressConsumed = true; addHighlight(sqName); return; }
+  if (state.currentTool === 'eraser')    { pressConsumed = true; eraseAnnotationAt(sqName); return; }
 
-  // If we're using circle/highlight/eraser tools, these are click-only — no drag needed
-  if (state.currentTool === 'circle') {
-    addCircle(sqName);
-    return;
-  }
-  if (state.currentTool === 'highlight') {
-    addHighlight(sqName);
-    return;
-  }
-  if (state.currentTool === 'eraser') {
-    eraseAnnotationAt(sqName);
-    return;
-  }
-
-  // For arrow, rectangle, select tools: prepare for potential drag OR click
+  // Arrow / rectangle tools start a shape. The select tool just waits for the
+  // release to decide between "chess click" and "draw an arrow".
   if (state.currentTool === 'arrow' || state.currentTool === 'rectangle') {
     state.drawingFrom = sqName;
     state.isDrawing = true;
-    return;
   }
-
-  // Select tool: don't immediately select — wait for mouseup to detect if drag
-  // (this lets drag ALWAYS work as arrow even when in select tool)
-  // We'll handle this in mouseup based on whether didDrag is true.
 }
 
-function onSquareMouseUp(e) {
-  if (!e.target.closest('.square')) return;
-  const sq = e.target.closest('.square');
+function endSquarePress(sq, x, y) {
+  // The release landed off the board (over a panel, the clock, a tooltip ...):
+  // drop the gesture so a stale press-square can't poison the next click.
+  if (!sq) { cancelSquarePress(); return; }
+
   const sqName = sq.dataset.square;
+  const from = pressSquare;
+  const moved = pressMoved;
+  const tool = state.currentTool;
+  // Read the pending shape BEFORE the reset below clears it.
+  const beginDrawing = state.isDrawing ? state.drawingFrom : null;
+  const consumed = pressConsumed;
 
-  // Detect drag: mousedown and mouseup on different squares = drag
-  const isDrag = mouseDownSquare && mouseDownSquare !== sqName;
+  cancelSquarePress();
 
-  // Drawing arrows/rectangles: from mousedown's drawingFrom to mouseup's sqName
-  if (state.isDrawing && state.drawingFrom) {
-    if (state.drawingFrom !== sqName) {
-      if (state.currentTool === 'arrow') {
-        addArrow(state.drawingFrom, sqName);
-      } else if (state.currentTool === 'rectangle') {
-        addRectangle(state.drawingFrom, sqName);
-      }
+  // Authoring / setup / circle / highlight / eraser already acted on the
+  // press - the release must not do anything else.
+  if (consumed) return;
+
+  // A drag only counts once the pointer really travelled. Pressing one square
+  // and releasing on another *without* moving the mouse (a hand wobble, or two
+  // separate taps) stays a chess click.
+  const isDrag = !!(moved && from && from !== sqName);
+
+  // Arrow / rectangle tool: a drag finishes the shape, a plain click still
+  // behaves like a normal chess click (select / move / deselect).
+  if (beginDrawing) {
+    if (isDrag) {
+      if (tool === 'arrow') addArrow(beginDrawing, sqName);
+      else if (tool === 'rectangle') addRectangle(beginDrawing, sqName);
+      renderAnnotations();
+      return;
     }
-    state.drawingFrom = null;
+  } else if (isDrag && tool === 'select') {
+    // Select tool + a real drag = draw an arrow (left-drag always draws).
+    addArrow(from, sqName);
+    renderAnnotations();
+    return;
+  }
+
+  // Otherwise this was a CLICK -> chess move / piece selection.
+  handleSquareClick(sqName);
+}
+
+function cancelSquarePress() {
+  pressSquare = null;
+  pressMoved = false;
+  pressConsumed = false;
+  if (state.isDrawing) {
     state.isDrawing = false;
-    renderAnnotations();
-    mouseDownSquare = null;
+    state.drawingFrom = null;
+  }
+}
+
+// A single click on a square in NORMAL mode.
+function handleSquareClick(sqName) {
+  // Clicking the already-selected square deselects it.
+  if (state.selectedSquare === sqName) {
+    state.selectedSquare = null;
+    highlightSquares();
     return;
   }
 
-  // For select tool: if user dragged (mousedown on different square than mouseup),
-  // treat it as an arrow draw — regardless of current tool. This is the key behavior.
-  if (isDrag && state.currentTool === 'select' && !state.setupMode && !isAuthoringMode()) {
-    addArrow(mouseDownSquare, sqName);
-    renderAnnotations();
-    mouseDownSquare = null;
-    return;
-  }
+  // A piece is selected → try to move it there.
+  if (state.selectedSquare) {
+    const from = state.selectedSquare;
+    if (tryMakeMove(from, sqName)) return;
 
-  // If this was a CLICK (no drag), handle chess move / piece selection
-  if (!isDrag) {
-    // Click on selected square = deselect
-    if (state.selectedSquare === sqName) {
-      state.selectedSquare = null;
+    // The move didn't happen. Never leave the board feeling dead:
+    // clicking one of your own pieces re-selects it, anything else explains why.
+    let piece = null;
+    try { piece = state.game.get(sqName); } catch (e) {}
+
+    if (piece && piece.color === state.game.turn()) {
+      state.selectedSquare = sqName;
       highlightSquares();
-    } else if (state.selectedSquare) {
-      // Click on destination with a piece selected = try chess move
-      tryMakeMove(state.selectedSquare, sqName);
-    } else {
-      // No piece selected — try to select this piece if it belongs to current player
-      try {
-        const piece = state.game.get(sqName);
-        if (piece && piece.color === state.game.turn()) {
-          state.selectedSquare = sqName;
-          highlightSquares();
-        }
-      } catch (e) {}
+      return;
     }
+
+    state.selectedSquare = from;   // keep the piece picked up
+    highlightSquares();
+    rejectMove(from, sqName, piece);
+    return;
   }
 
-  mouseDownSquare = null;
+  // Nothing selected → pick up one of the side-to-move's pieces.
+  let piece = null;
+  try { piece = state.game.get(sqName); } catch (e) {}
+
+  if (!piece) return;   // empty square, nothing to do
+
+  if (piece.color === state.game.turn()) {
+    state.selectedSquare = sqName;
+    highlightSquares();
+    return;
+  }
+
+  rejectMove(null, sqName, piece);
+}
+
+function turnName(color) { return color === 'w' ? 'White' : 'Black'; }
+
+// pieceName() wants a FEN letter ('P' / 'p'). chess.js hands us
+// { type, color } objects, so normalise both shapes here.
+function pieceLetter(p) {
+  if (!p) return null;
+  if (typeof p === 'string') return p;
+  if (p.type) return p.color === 'w' ? p.type.toUpperCase() : p.type.toLowerCase();
+  return null;
+}
+
+function rejectMove(from, to, piece) {
+  const el = showSquare(to);
+  if (el) {
+    el.classList.remove('square-reject');
+    void el.offsetWidth;              // restart the animation
+    el.classList.add('square-reject');
+    setTimeout(() => el.classList.remove('square-reject'), 450);
+  }
+
+  const turn = state.game.turn();
+  const toName = pieceName(pieceLetter(piece));
+
+  // Clicked a piece that isn't yours to move.
+  if (piece && piece.color !== turn) {
+    if (!from) {
+      toast(`${turnName(turn)} to move — ${toName} cannot be selected right now`, 'error');
+    } else {
+      toast(`Illegal move — ${toName} belongs to ${turnName(piece.color)}`, 'error');
+    }
+    return;
+  }
+
+  // Your own piece, but that square isn't reachable (blocked / wrong shape /
+  // would leave the king in check — chess.js hides all of those).
+  if (from) {
+    toast(`${pieceName(pieceLetter(getPieceAt(from)))} cannot go to ${to}`, 'error');
+  }
 }
 
 function tryMakeMove(from, to) {
+  let result = null;
   try {
-    const result = state.game.move({ from, to, promotion: 'q' });
-    if (result) {
-      state.selectedSquare = null;
-      // Append the new SAN to our persistent history, dropping any redo branch
-      state.history = state.history.slice(0, state.historyIndex + 1);
-      state.history.push(result.san);
-      state.historyIndex = state.history.length - 1;
-      renderAll();
-      requestEngineEval();
-      return true;
+    result = state.game.move({ from, to, promotion: 'q' });
+  } catch (e) {
+    return false;          // chess.js rejects the move object outright
+  }
+  if (!result) return false;
+
+  // The move is on the board now — commit the bookkeeping first so that a
+  // failure anywhere in the UI refresh can never report "move failed" for a
+  // move that actually happened (that used to leave the piece stuck and show
+  // a bogus "Illegal move" toast).
+  state.selectedSquare = null;
+  // Append the new SAN to our persistent history, dropping any redo branch
+  state.history = state.history.slice(0, state.historyIndex + 1);
+  state.history.push(result.san);
+  state.historyIndex = state.history.length - 1;
+
+  renderAll();            // fail-safe: never throws out of a single panel
+  try { requestEngineEval(); } catch (e) {}
+  return true;
+}
+
+// Scroll an element into view without ever throwing. scrollIntoView is
+// missing/limited in some embedded webviews, and a throw here used to bubble
+// up into the click handler and break move-making entirely.
+function safeScrollIntoView(el, opts) {
+  if (!el) return;
+  try {
+    if (typeof el.scrollIntoView === 'function') {
+      el.scrollIntoView(opts || { block: 'nearest', behavior: 'smooth' });
+      return;
     }
   } catch (e) {}
-  return false;
+  try {
+    const p = el.parentElement;
+    if (p) p.scrollTop = Math.max(0, el.offsetTop - p.clientHeight / 2);
+  } catch (e) {}
 }
 
 // ============================================
@@ -945,7 +1077,7 @@ function renderMovesList() {
   }
 
   const current = els.movesList.querySelector('.current');
-  if (current) current.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  safeScrollIntoView(current, { block: 'nearest', behavior: 'smooth' });
 }
 
 function goToMove(idx) {
@@ -1290,7 +1422,7 @@ function handleLibraryAction(action, chapterId, puzzleId) {
       setTimeout(autoFitBoard, 50);
       // Scroll to editor panel
       const panel = $('puzzleEditorPanel');
-      if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      safeScrollIntoView(panel, { behavior: 'smooth', block: 'center' });
       toast('New puzzle added — set its position and click SAVE', 'success');
     }
   } else if (action === 'rename-chapter') {
@@ -1510,7 +1642,7 @@ function saveCurrentPuzzle() {
     const newPuzEl = document.querySelector('.library-puzzle.active');
     if (newPuzEl) {
       newPuzEl.classList.add('puzzle-just-saved');
-      newPuzEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      safeScrollIntoView(newPuzEl, { behavior: 'smooth', block: 'center' });
       setTimeout(() => newPuzEl.classList.remove('puzzle-just-saved'), 2000);
     }
     // Also flash the library panel border
@@ -2071,7 +2203,7 @@ function enterAuthoringForNewPuzzle() {
   setTimeout(autoFitBoard, 50);
   // Scroll to editor panel
   const panel = $('puzzleEditorPanel');
-  if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  safeScrollIntoView(panel, { behavior: 'smooth', block: 'center' });
   toast('New puzzle — set the position and click SAVE', 'success');
 }
 
@@ -2412,11 +2544,15 @@ document.addEventListener('keydown', (e) => {
 // RENDER ALL
 // ============================================
 function renderAll() {
-  renderBoard();
-  renderAnnotations();
-  highlightSquares();
-  renderMovesList();
-  updateFen();
+  // Every step is isolated: one panel throwing must never abort the rest of
+  // the refresh, and must never propagate back into the click handler that
+  // asked for the repaint (that is how a legal move used to end up reported
+  // as "illegal").
+  try { renderBoard(); }       catch (e) { console.error('renderBoard failed', e); }
+  try { renderAnnotations(); } catch (e) { console.error('renderAnnotations failed', e); }
+  try { highlightSquares(); }  catch (e) { console.error('highlightSquares failed', e); }
+  try { renderMovesList(); }   catch (e) { console.error('renderMovesList failed', e); }
+  try { updateFen(); }         catch (e) { console.error('updateFen failed', e); }
 }
 
 // ============================================
@@ -2424,7 +2560,23 @@ function renderAll() {
 // ============================================
 function bindEvents() {
   els.board.addEventListener('mousedown', onSquareMouseDown);
+  els.board.addEventListener('mousemove', onSquareMouseMove);
   els.board.addEventListener('mouseup', onSquareMouseUp);
+
+  // Touch support (phones / tablets): a tap = chess move, a swipe = arrow.
+  els.board.addEventListener('touchstart', onTouchStart, { passive: true });
+  els.board.addEventListener('touchmove', onTouchMove, { passive: false });
+  els.board.addEventListener('touchend', onTouchEnd, { passive: false });
+  els.board.addEventListener('touchcancel', () => { touchHandledPress = false; cancelSquarePress(); });
+
+  // Released outside the board (or the window lost focus)? Drop the gesture so
+  // a stale press-square can't turn the next plain click into an arrow.
+  window.addEventListener('mouseup', (e) => {
+    if (!e.target || e.target === window || e.target === document) return;
+    if (els.board.contains(e.target)) return;
+    cancelSquarePress();
+  });
+  window.addEventListener('blur', cancelSquarePress);
 
   $('btnFlip').addEventListener('click', flipBoard);
   $('btnReset').addEventListener('click', resetBoard);

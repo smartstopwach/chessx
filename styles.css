@@ -776,6 +776,36 @@ body[data-flipped="true"] .board .coord {
   background: radial-gradient(circle, rgba(248, 81, 73, 0.85) 0%, rgba(248, 81, 73, 0) 70%) !important;
 }
 
+/* Rejected / illegal click feedback — the square flashes red and shakes once
+   so the player immediately knows why nothing moved. */
+.square.square-reject {
+  animation: squareReject 0.42s ease;
+}
+
+.square.square-reject::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(248, 81, 73, 0.45);
+  border-radius: 2px;
+  pointer-events: none;
+  z-index: 5;
+  animation: squareRejectFade 0.42s ease;
+}
+
+@keyframes squareReject {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-4px); }
+  40% { transform: translateX(4px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(3px); }
+}
+
+@keyframes squareRejectFade {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
 .square .move-dot {
   position: absolute;
   width: 28%;
