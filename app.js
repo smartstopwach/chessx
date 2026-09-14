@@ -384,25 +384,55 @@ function onSquareMouseDown(e) {
   const sq = e.target.closest('.square');
   const sqName = sq.dataset.square;
 
-  // AUTHORING MODE: route clicks to PUZZLE editor's independent setup
-  // The puzzle editor has its own Chess instance (puzzleGame) so it
-  // never touches the main board unless user explicitly clicks
-  // "USE THIS POSITION FOR PUZZLE" / "Load to Board" / SAVE.
+  // AUTHORING MODE: route clicks to PUZZLE editor's independent setup.
+  // In puzzle mode, the LEFT-CLICK on the BOARD works like normal chess
+  // (click piece → click destination to make a legal move). This makes
+  // setting up custom positions natural — just play the moves that lead
+  // to the desired position. The user can also drop extra pieces from
+  // the BLUE rack if needed.
   if (isAuthoringMode()) {
-    e.stopPropagation();
-    e.preventDefault();
-    if (e.button === 2) {
-      peErasePiece(sqName);
-      return;
-    }
-    if (puzzleState.heldPiece) {
+    // If holding a piece from rack (or board), place it (rule-free placement)
+    if (puzzleState.heldPiece && !puzzleState.heldPiece.source) {
+      // rack piece — place freely
+      e.stopPropagation();
+      e.preventDefault();
       pePlacePiece(sqName, puzzleState.heldPiece.piece);
       return;
     }
-    const piece = peGetPieceAt(sqName);
-    if (piece) {
-      pePickFromBoard(sqName);
+    // Otherwise treat like a normal chess move (against puzzleState.game)
+    e.stopPropagation();
+    e.preventDefault();
+    if (e.button === 2) {
+      // Right-click: erase (rule-free, but rare since most setup is via moves)
+      peErasePiece(sqName);
       return;
+    }
+    if (!puzzleGame()) return;
+    const piece = peGetPieceAt(sqName);
+    if (!puzzleState.selectedSquare) {
+      // First click — pick up a piece on the puzzle board
+      if (piece) {
+        puzzleState.selectedSquare = sqName;
+      }
+      peUpdateSelectionHighlight();
+      return;
+    }
+    if (puzzleState.selectedSquare === sqName) {
+      // Clicked same square — deselect
+      puzzleState.selectedSquare = null;
+      peUpdateSelectionHighlight();
+      return;
+    }
+    // Try to make a legal move on the puzzle board
+    const result = peMakeMove(puzzleState.selectedSquare, sqName);
+    if (!result) {
+      // Move was illegal — try selecting the new square (if it has a piece)
+      if (piece) {
+        puzzleState.selectedSquare = sqName;
+      } else {
+        puzzleState.selectedSquare = null;
+      }
+      peUpdateSelectionHighlight();
     }
     return;
   }
@@ -1232,6 +1262,22 @@ function loadPuzzleToEditor(puzzleId) {
     $('puzzleTags').value = '';
     $('puzzleFen').value = '';
     $('puzzleChapterSelect').value = '';
+    updateFenDisplay('');
+    // Clear puzzle editor's independent state
+    if (puzzleGame()) {
+      puzzleGame().load('8/8/8/8/8/8/8/8 w - - 0 1');
+      puzzleState.history = [];
+      puzzleState.historyIndex = -1;
+      puzzleState.heldPiece = null;
+      peSetupPushHistory();
+      peUpdatePieceCount();
+      peUpdateHint();
+    }
+    // Reset main board to standard
+    state.game.reset();
+    state.history = [];
+    state.historyIndex = -1;
+    renderAll();
     return;
   }
   $('puzzleTitle').value = puzzle.title || '';
@@ -1242,6 +1288,31 @@ function loadPuzzleToEditor(puzzleId) {
   $('puzzleFen').value = puzzle.fen || '';
   updateFenDisplay(puzzle.fen || '');
   $('puzzleChapterSelect').value = chapterId;
+
+  // Load the puzzle's FEN into the puzzle editor's independent state
+  if (puzzleGame() && puzzle.fen) {
+    try {
+      puzzleGame().load(puzzle.fen);
+      puzzleState.history = [];
+      puzzleState.historyIndex = -1;
+      puzzleState.heldPiece = null;
+      puzzleState.selectedSquare = null;
+      peSetupPushHistory();
+      peUpdatePieceCount();
+      peUpdateHint();
+    } catch (e) {}
+  }
+
+  // Also load the puzzle position into the MAIN board so user sees it
+  if (puzzle.fen) {
+    try {
+      state.game.load(puzzle.fen);
+      state.history = [];
+      state.historyIndex = -1;
+      renderAll();
+    } catch (e) {}
+  }
+
   toast(`Loaded puzzle: ${puzzle.title}`);
 }
 
@@ -1596,10 +1667,11 @@ function peErasePiece(sq) {
 }
 
 function peSelectRackPiece(p) {
-  puzzleState.heldPiece = { piece: p, source: 'rack' };
+  // Rack pieces are held with no source — they go via pePlacePiece (rule-free)
+  puzzleState.heldPiece = { piece: p, source: null };
   $$('.pe-piece-rack .pe-rack-piece').forEach(x => x.classList.toggle('selected', x.dataset.piece === p));
   peUpdateHint();
-  toast(`Holding ${p.toUpperCase() === p ? 'White ' : 'Black '}${p.toLowerCase() === 'k' ? 'King' : p.toLowerCase() === 'q' ? 'Queen' : p.toLowerCase() === 'r' ? 'Rook' : p.toLowerCase() === 'b' ? 'Bishop' : p.toLowerCase() === 'n' ? 'Knight' : 'Pawn'} — click board square to place`, 'success');
+  toast(`Holding ${p.toUpperCase() === p ? 'White ' : 'Black '}${p.toLowerCase() === 'k' ? 'King' : p.toLowerCase() === 'q' ? 'Queen' : p.toLowerCase() === 'r' ? 'Rook' : p.toLowerCase() === 'b' ? 'Bishop' : p.toLowerCase() === 'n' ? 'Knight' : 'Pawn'} — click any square to place`, 'success');
 }
 
 function pePickFromBoard(sq) {
@@ -1807,17 +1879,36 @@ function enterAuthoringForNewPuzzle() {
   lib.activePuzzleId = null;
   saveLibrary(lib);
 
-  // Clear the editor fields but pre-fill with auto-name and current position
-  const autoTitle = autoName('Puzzle', lib);
+  // Clear all editor fields
   $('puzzleTitle').value = '';
   $('puzzleDescription').value = '';
   $('puzzleSolution').value = '';
   $('puzzleDifficulty').value = '3';
   $('puzzleTags').value = '';
-  // Auto-capture the current board position
-  const currentFen = state.game.fen();
-  $('puzzleFen').value = currentFen;
-  updateFenDisplay(currentFen);
+
+  // CRITICAL: Reset the puzzle editor's INDEPENDENT state (puzzleState.game)
+  // to the standard position so user starts fresh. Don't carry over old puzzle.
+  if (puzzleGame()) {
+    puzzleGame().load('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1');
+    puzzleState.history = [];
+    puzzleState.historyIndex = -1;
+    puzzleState.heldPiece = null;
+    puzzleState.selectedSquare = null;
+    peSetupPushHistory();
+    peUpdatePieceCount();
+    peUpdateHint();
+  }
+
+  // Also sync the puzzle FEN display to standard
+  const startFen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+  $('puzzleFen').value = startFen;
+  updateFenDisplay(startFen);
+  // Reset main board to standard too
+  state.game.reset();
+  state.history = [];
+  state.historyIndex = -1;
+  renderAll();
+
   // Set chapter dropdown to active or first
   const chapId = lib.activeChapterId || lib.chapters[0].id;
   $('puzzleChapterSelect').value = chapId;
@@ -1825,6 +1916,7 @@ function enterAuthoringForNewPuzzle() {
   renderLibrary($('librarySearch')?.value || '');
 
   setAuthoringMode(true);
+  setTimeout(autoFitBoard, 50);
   // Scroll to editor panel
   const panel = $('puzzleEditorPanel');
   if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1833,6 +1925,19 @@ function enterAuthoringForNewPuzzle() {
 
 function exitAuthoringMode() {
   setAuthoringMode(false);
+  // CRITICAL: Reset main board to standard so user gets clean state after exit
+  state.game.reset();
+  state.history = [];
+  state.historyIndex = -1;
+  state.selectedSquare = null;
+  clearAllAnnotations();
+  // Clear any selected piece in puzzle rack
+  puzzleState.heldPiece = null;
+  puzzleState.selectedSquare = null;
+  $$('.pe-rack-piece').forEach(x => x.classList.remove('selected'));
+  peUpdateHint();
+  renderAll();
+  setTimeout(autoFitBoard, 50);
   toast('Exited authoring mode', 'success');
 }
 
@@ -1991,7 +2096,7 @@ function setEngineMultiPV(n) {
 }
 
 // ============================================
-// AUTO-FIT BOARD (always fills available space)
+// AUTO-FIT BOARD (always fills available space, keeps SQUARE)
 // ============================================
 function autoFitBoard() {
   const wrapper = document.getElementById('boardWrapper');
@@ -1999,13 +2104,19 @@ function autoFitBoard() {
   if (!wrapper || !boardContainer) return;
 
   // Available space inside wrapper (account for player-info rows above/below)
-  const availW = wrapper.clientWidth - 24; // small padding buffer
-  const availH = wrapper.clientHeight - 40; // minimal buffer for player info rows
+  // The two meta rows add ~52px (24px + 24px + 4px gap)
+  const metaRows = (document.querySelector('.board-meta-top')?.getBoundingClientRect().height || 24) +
+                    (document.querySelector('.board-meta-bottom')?.getBoundingClientRect().height || 24);
+  const availW = wrapper.clientWidth - 24; // padding buffer
+  const availH = wrapper.clientHeight - metaRows - 16; // account for meta rows + gap
 
-  // Pick the smaller to keep square, then clamp to [320, 1100]
-  const size = Math.max(320, Math.min(1100, Math.min(availW, availH)));
+  // Board MUST stay square — pick the smaller dim, then clamp
+  const size = Math.max(320, Math.min(1100, Math.floor(Math.min(availW, availH))));
 
-  boardContainer.style.setProperty('--board-size', Math.round(size) + 'px');
+  boardContainer.style.setProperty('--board-size', size + 'px');
+  // Also force width/height explicitly to override max-* shrinking
+  boardContainer.style.width = size + 'px';
+  boardContainer.style.height = size + 'px';
   setTimeout(renderAnnotations, 50);
 }
 
