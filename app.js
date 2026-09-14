@@ -1158,12 +1158,12 @@ function getLibrary() {
   return {
     chapters: [
       {
-        id: 'welcome-' + Date.now(),
+        id: uniqueId('chapter'),
         name: 'My First Chapter',
         expanded: true,
         puzzles: [
           {
-            id: 'puzzle-' + Date.now(),
+            id: uniqueId('puzzle'),
             title: 'Mate in 2 (Example)',
             description: 'White to move. Find the forcing sequence.',
             solution: 'Qh5+, g6, Qxg6#',
@@ -1198,6 +1198,23 @@ function getActivePuzzle() {
   const chap = getActiveChapter();
   if (!chap) return null;
   return chap.puzzles.find(p => p.id === lib.activePuzzleId);
+}
+
+// ============================================
+// UNIQUE ID GENERATOR (fixes Date.now() collision)
+// ============================================
+let __uidCounter = 0;
+function uniqueId(prefix = 'id') {
+  __uidCounter++;
+  return prefix + '-' + Date.now().toString(36) + '-' + __uidCounter.toString(36) + '-' + Math.random().toString(36).substring(2, 7);
+}
+
+function autoName(prefix, lib) {
+  // Auto-generate a name like "Puzzle 1", "Puzzle 2", "Chapter 1", etc.
+  let n = 1;
+  const existing = lib.chapters.flatMap(c => c.puzzles).map(p => p.title).filter(t => t && t.startsWith(prefix));
+  while (existing.includes(prefix + ' ' + n)) n++;
+  return prefix + ' ' + n;
 }
 
 function renderLibrary(filter = '') {
@@ -1287,8 +1304,8 @@ function handleLibraryAction(action, chapterId, puzzleId) {
     loadPuzzleToEditor(puzzleId);
   } else if (action === 'add-puzzle') {
     const newPuzzle = {
-      id: 'puzzle-' + Date.now(),
-      title: 'New Puzzle',
+      id: uniqueId('puzzle'),
+      title: autoName('Puzzle', lib),
       description: '',
       solution: '',
       difficulty: 3,
@@ -1306,7 +1323,11 @@ function handleLibraryAction(action, chapterId, puzzleId) {
       saveLibrary(lib);
       renderLibrary($('librarySearch')?.value || '');
       loadPuzzleToEditor(newPuzzle.id);
-      toast('New puzzle added — set its position and save');
+      setAuthoringMode(true);
+      // Scroll to editor panel
+      const panel = $('puzzleEditorPanel');
+      if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      toast('New puzzle added — set its position and click SAVE', 'success');
     }
   } else if (action === 'rename-chapter') {
     const chap = lib.chapters.find(c => c.id === chapterId);
@@ -1394,33 +1415,51 @@ function saveCurrentPuzzle() {
       if (p) { puzzle = p; chap = c; break; }
     }
   }
-  const title = $('puzzleTitle').value.trim();
-  if (!title) { toast('Please enter a title', 'error'); return; }
+  // Get title — auto-generate if empty so save ALWAYS works
+  let title = $('puzzleTitle').value.trim();
+  if (!title) {
+    title = autoName('Puzzle', lib);
+    $('puzzleTitle').value = title;
+  }
   const description = $('puzzleDescription').value.trim();
   const solution = $('puzzleSolution').value.trim();
-  const difficulty = parseInt($('puzzleDifficulty').value);
+  const difficulty = parseInt($('puzzleDifficulty').value) || 3;
   const tags = $('puzzleTags').value.trim();
-  const fen = $('puzzleFen').value.trim() || state.game.fen();
+  // ALWAYS use current board FEN — user expects what they see to be saved
+  let fen = state.game.fen();
+  $('puzzleFen').value = fen;
+  updateFenDisplay(fen);
   const newChapterId = $('puzzleChapterSelect').value;
 
   if (!puzzle) {
     // Create new puzzle
-    const targetChapId = newChapterId || (lib.chapters[0]?.id);
+    let targetChapId = newChapterId || lib.activeChapterId || lib.chapters[0]?.id;
     if (!targetChapId) {
       // Auto-create a chapter
-      const newChap = { id: 'chapter-' + Date.now(), name: 'Chapter 1', expanded: true, puzzles: [] };
+      const newChap = { id: uniqueId('chapter'), name: 'My Puzzles', expanded: true, puzzles: [] };
       lib.chapters.push(newChap);
+      targetChapId = newChap.id;
     }
-    const tid = newChapterId || lib.chapters[0].id;
-    const target = lib.chapters.find(c => c.id === tid);
+    const target = lib.chapters.find(c => c.id === targetChapId);
+    if (!target) {
+      // Fallback: use first chapter
+      const fallback = lib.chapters[0];
+      if (!fallback) {
+        toast('No chapter to save into — please create a chapter first', 'error');
+        return;
+      }
+    }
+    const tid = targetChapId || lib.chapters[0].id;
+    const t = lib.chapters.find(c => c.id === tid) || lib.chapters[0];
     puzzle = {
-      id: 'puzzle-' + Date.now(),
+      id: uniqueId('puzzle'),
       title, description, solution, difficulty, tags, fen,
       chapterId: tid, createdAt: Date.now(),
     };
-    target.puzzles.push(puzzle);
+    t.puzzles.push(puzzle);
     lib.activeChapterId = tid;
     lib.activePuzzleId = puzzle.id;
+    t.expanded = true;
   } else {
     // Update existing
     puzzle.title = title;
@@ -1431,7 +1470,7 @@ function saveCurrentPuzzle() {
     puzzle.fen = fen;
 
     // Move to new chapter if changed
-    if (newChapterId && chap.id !== newChapterId) {
+    if (newChapterId && chap && chap.id !== newChapterId) {
       chap.puzzles = chap.puzzles.filter(p => p.id !== puzzle.id);
       const newChap = lib.chapters.find(c => c.id === newChapterId);
       if (newChap) {
@@ -1440,13 +1479,14 @@ function saveCurrentPuzzle() {
         lib.activeChapterId = newChap.id;
       }
     }
-    puzzle.chapterId = chap.id;
+    if (chap) puzzle.chapterId = chap.id;
   }
 
   saveLibrary(lib);
   renderLibrary($('librarySearch')?.value || '');
   renderChapterSelect();
-  toast('Puzzle saved!', 'success');
+  updateFenDisplay(fen);
+  toast('✓ Saved: ' + title, 'success');
 }
 
 function captureCurrentPosition() {
@@ -1654,37 +1694,42 @@ function isAuthoringMode() {
 }
 
 function enterAuthoringForNewPuzzle() {
-  // Create a new puzzle and enter authoring mode
+  // SIMPLE FLOW: just enter authoring mode and clear the editor.
+  // The puzzle is only created when the user clicks SAVE.
   const lib = getLibrary();
   // Auto-create chapter if none exists
   if (!lib.chapters.length) {
-    lib.chapters.push({ id: 'chapter-' + Date.now(), name: 'My Puzzles', expanded: true, puzzles: [] });
+    const newChap = { id: uniqueId('chapter'), name: 'My Puzzles', expanded: true, puzzles: [] };
+    lib.chapters.push(newChap);
+    saveLibrary(lib);
+    renderChapterSelect();
   }
-  const chapId = lib.activeChapterId || lib.chapters[0].id;
-  const newP = {
-    id: 'puzzle-' + Date.now(),
-    title: 'New Puzzle',
-    description: '',
-    solution: '',
-    difficulty: 3,
-    tags: '',
-    fen: state.game.fen(),
-    chapterId: chapId,
-    createdAt: Date.now(),
-  };
-  const chap = lib.chapters.find(c => c.id === chapId);
-  chap.puzzles.push(newP);
-  lib.activeChapterId = chapId;
-  lib.activePuzzleId = newP.id;
-  chap.expanded = true;
+  // Clear active puzzle so save creates a new one
+  lib.activePuzzleId = null;
   saveLibrary(lib);
+
+  // Clear the editor fields but pre-fill with auto-name and current position
+  const autoTitle = autoName('Puzzle', lib);
+  $('puzzleTitle').value = '';
+  $('puzzleDescription').value = '';
+  $('puzzleSolution').value = '';
+  $('puzzleDifficulty').value = '3';
+  $('puzzleTags').value = '';
+  // Auto-capture the current board position
+  const currentFen = state.game.fen();
+  $('puzzleFen').value = currentFen;
+  updateFenDisplay(currentFen);
+  // Set chapter dropdown to active or first
+  const chapId = lib.activeChapterId || lib.chapters[0].id;
+  $('puzzleChapterSelect').value = chapId;
+
   renderLibrary($('librarySearch')?.value || '');
-  renderChapterSelect();
-  loadPuzzleToEditor(newP.id);
+
   setAuthoringMode(true);
   // Scroll to editor panel
   const panel = $('puzzleEditorPanel');
   if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  toast('New puzzle — set the position and click SAVE', 'success');
 }
 
 function exitAuthoringMode() {
@@ -2221,7 +2266,7 @@ function doInit() {
     const name = prompt('Chapter name:', 'New Chapter');
     if (!name || !name.trim()) return;
     const lib = getLibrary();
-    const newChap = { id: 'chapter-' + Date.now(), name: name.trim(), expanded: true, puzzles: [] };
+    const newChap = { id: uniqueId('chapter'), name: name.trim(), expanded: true, puzzles: [] };
     lib.chapters.push(newChap);
     lib.activeChapterId = newChap.id;
     saveLibrary(lib);

@@ -470,91 +470,85 @@
         <button id="btnQuickTest">▶ Test</button>
       </div>
       <div class="editor-row">
-        <label>Title</label>
-        <input type="text" id="puzzleTitle" placeholder="e.g. Fork the king and queen" />
+        <label>Title <span class="optional-tag">(optional)</span></label>
+        <input type="text" id="puzzleTitle" placeholder="Auto-named if left blank" />
       </div>
-      <div class="editor-row">
-        <label>Question / Hint for Student</label>
-        <textarea id="puzzleDescription" rows="2" placeholder="What should the player do here?"></textarea>
-      </div>
-      <div class="editor-row">
-        <label>Solution (SAN moves, comma-separated)</label>
-        <input type="text" id="puzzleSolution" placeholder="e.g. Nxe5, Qh5+, Rd1" />
-      </div>
-      <div class="editor-row">
-        <label>Difficulty</label>
-        <select id="puzzleDifficulty">
-          <option value="1">★ Beginner</option>
-          <option value="2">★★ Easy</option>
-          <option value="3" selected>★★★ Medium</option>
-          <option value="4">★★★★ Hard</option>
-          <option value="5">★★★★★ Expert</option>
-        </select>
-      </div>
-      <div class="editor-row">
-        <label>Tags (comma-separated)</label>
-        <input type="text" id="puzzleTags" placeholder="e.g. mate, fork, endgame" />
-      </div>
-      <div class="editor-row">
-        <label>Starting Position (FEN)</label>
+      <div class="editor-row fen-row">
+        <label>Starting Position</label>
         <div class="fen-display" id="puzzleFenDisplay">No position set</div>
         <div class="fen-actions">
           <button class="btn-mini" id="btnCapturePosition" title="Capture current board position">📸 Capture</button>
           <button class="btn-mini" id="btnLoadPosition" title="Load this FEN to board">⬇ Load</button>
+          <button class="btn-mini" id="btnToggleInlineSetup" title="Show/hide position setup tools">⚙ Setup</button>
         </div>
         <textarea id="puzzleFen" rows="2" placeholder="FEN string..." style="display:none"></textarea>
-        <div class="position-setup-inline">
-          <div class="setup-toggle-row">
-            <button class="btn-mini toggle" id="btnToggleInlineSetup" title="Show/hide position setup tools">
-              ⚙ Position Setup Tools
-            </button>
-            <span class="setup-inline-hint">Click a piece, then click a square · drag pieces too · right-click to erase</span>
+        <div class="position-setup-body collapsed" id="inlineSetupBody">
+          <div class="setup-hint-mini" id="inlineSetupHint">Pick a piece from the rack or click a preset below</div>
+          <div class="setup-tools-mini">
+            <button class="btn-mini" id="btnInlineSetupUndo" title="Undo setup change">↶ Undo</button>
+            <button class="btn-mini" id="btnInlineSetupRedo" title="Redo setup change">↷ Redo</button>
+            <span class="piece-count-mini" id="inlinePieceCount" title="Pieces on board: white · black">0·0</span>
+            <span class="setup-spacer"></span>
+            <button class="btn-mini" id="btnInlineClearBoard" title="Empty the board">⌀ Empty</button>
+            <button class="btn-mini" id="btnInlineLoadStandard" title="Reset to starting position">↻ Start</button>
           </div>
-          <div class="position-setup-body collapsed" id="inlineSetupBody">
-            <div class="setup-hint-mini" id="inlineSetupHint">Pick a piece from the rack or click a preset below</div>
-            <div class="setup-tools-mini">
-              <button class="btn-mini" id="btnInlineSetupUndo" title="Undo setup change">↶ Undo</button>
-              <button class="btn-mini" id="btnInlineSetupRedo" title="Redo setup change">↷ Redo</button>
-              <span class="piece-count-mini" id="inlinePieceCount" title="Pieces on board: white · black">0·0</span>
-              <span class="setup-spacer"></span>
-              <button class="btn-mini" id="btnInlineClearBoard" title="Empty the board">⌀ Empty</button>
-              <button class="btn-mini" id="btnInlineLoadStandard" title="Reset to starting position">↻ Start</button>
-            </div>
-            <div class="piece-rack-mini" id="inlinePieceRack">
-              <!-- Filled by JS — drag pieces or click to select -->
-            </div>
-            <div class="preset-row-mini">
-              <button class="preset-btn-mini" data-preset="standard" title="Standard starting position">Standard</button>
-              <button class="preset-btn-mini" data-preset="empty" title="Empty board">Empty</button>
-              <button class="preset-btn-mini" data-preset="kings" title="Just the two kings">K vs K</button>
-              <button class="preset-btn-mini" data-preset="endgame_kq" title="King + Queen vs King">K+Q vs K</button>
-              <button class="preset-btn-mini" data-preset="endgame_krk" title="King + Rook vs King">K+R vs K</button>
-              <button class="preset-btn-mini" data-preset="castling_test" title="Castling test position">Castling</button>
-            </div>
-            <button class="btn-primary-full btn-capture-mini" id="btnInlineCaptureToPuzzle" title="Use the current board position as this puzzle's starting position">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-              USE THIS POSITION FOR PUZZLE
-            </button>
+          <div class="piece-rack-mini" id="inlinePieceRack">
+            <!-- Filled by JS — drag pieces or click to select -->
           </div>
+          <div class="preset-row-mini">
+            <button class="preset-btn-mini" data-preset="standard" title="Standard starting position">Standard</button>
+            <button class="preset-btn-mini" data-preset="empty" title="Empty board">Empty</button>
+            <button class="preset-btn-mini" data-preset="kings" title="Just the two kings">K vs K</button>
+            <button class="preset-btn-mini" data-preset="endgame_kq" title="King + Queen vs King">K+Q vs K</button>
+            <button class="preset-btn-mini" data-preset="endgame_krk" title="King + Rook vs King">K+R vs K</button>
+            <button class="preset-btn-mini" data-preset="castling_test" title="Castling test position">Castling</button>
+          </div>
+          <button class="btn-primary-full btn-capture-mini" id="btnInlineCaptureToPuzzle" title="Use the current board position as this puzzle's starting position">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            USE THIS POSITION FOR PUZZLE
+          </button>
         </div>
       </div>
-      <div class="editor-row chapter-select-row">
-        <label>Chapter</label>
-        <select id="puzzleChapterSelect">
-          <!-- Filled by JS -->
-        </select>
-      </div>
-      <button class="btn-primary-full" id="btnSavePuzzle" style="margin-top: 8px">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-        SAVE PUZZLE
+      <button class="btn-save-puzzle-big" id="btnSavePuzzle">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        <span class="save-text">SAVE PUZZLE</span>
       </button>
-      <div class="row">
-        <button class="btn-ghost-full" id="btnNewPuzzle">+ New Puzzle</button>
-        <button class="btn-ghost-full" id="btnDeletePuzzle" title="Delete this puzzle">🗑 Delete</button>
+      <div class="puzzle-editor-bottom-row">
+        <button class="btn-mini-secondary" id="btnNewPuzzle">+ New</button>
+        <button class="btn-mini-secondary" id="btnDeletePuzzle" title="Delete this puzzle">🗑 Delete</button>
+        <button class="btn-mini-secondary" id="btnTestPuzzle" title="Try the puzzle from student perspective">▶ Test</button>
       </div>
-      <button class="btn-ghost-full" id="btnTestPuzzle" title="Try the puzzle from student perspective" style="margin-top: 4px">
-        ▶ Test as Student
-      </button>
+      <details class="advanced-fields">
+        <summary>⚙ Advanced (optional)</summary>
+        <div class="editor-row">
+          <label>Question / Hint for Student</label>
+          <textarea id="puzzleDescription" rows="2" placeholder="What should the player do here?"></textarea>
+        </div>
+        <div class="editor-row">
+          <label>Solution (SAN moves)</label>
+          <input type="text" id="puzzleSolution" placeholder="e.g. Nxe5, Qh5+, Rd1" />
+        </div>
+        <div class="editor-row">
+          <label>Difficulty</label>
+          <select id="puzzleDifficulty">
+            <option value="1">★ Beginner</option>
+            <option value="2">★★ Easy</option>
+            <option value="3" selected>★★★ Medium</option>
+            <option value="4">★★★★ Hard</option>
+            <option value="5">★★★★★ Expert</option>
+          </select>
+        </div>
+        <div class="editor-row">
+          <label>Tags</label>
+          <input type="text" id="puzzleTags" placeholder="e.g. mate, fork, endgame" />
+        </div>
+        <div class="editor-row chapter-select-row">
+          <label>Chapter</label>
+          <select id="puzzleChapterSelect">
+            <!-- Filled by JS -->
+          </select>
+        </div>
+      </details>
     </div>
 
     <!-- Lesson Save/Load -->

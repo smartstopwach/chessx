@@ -1610,6 +1610,102 @@ body[data-flipped="true"] .board .coord {
 .editor-row {
   margin-bottom: 8px;
 }
+.optional-tag {
+  color: var(--text-muted);
+  font-size: 9px;
+  font-weight: 400;
+  margin-left: 6px;
+  font-style: italic;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.fen-row {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px;
+  background: var(--bg-tertiary);
+  margin-bottom: 10px;
+}
+.btn-save-puzzle-big {
+  width: 100%;
+  background: linear-gradient(135deg, var(--accent) 0%, #d4af30 100%);
+  color: var(--bg-primary);
+  border: none;
+  padding: 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  transition: var(--transition);
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 8px;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  box-shadow: 0 2px 12px rgba(232, 197, 71, 0.3);
+}
+.btn-save-puzzle-big:hover {
+  background: linear-gradient(135deg, var(--accent-hover) 0%, #e8c547 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 18px rgba(232, 197, 71, 0.45);
+}
+.btn-save-puzzle-big:active {
+  transform: translateY(0);
+}
+.puzzle-editor-bottom-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.puzzle-editor-bottom-row button {
+  flex: 1;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  padding: 6px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: var(--transition);
+}
+.puzzle-editor-bottom-row button:hover {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+.advanced-fields {
+  margin-top: 8px;
+  border-top: 1px dashed var(--border);
+  padding-top: 8px;
+}
+.advanced-fields summary {
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 6px 4px;
+  border-radius: 4px;
+  user-select: none;
+  transition: var(--transition);
+}
+.advanced-fields summary:hover {
+  color: var(--accent);
+  background: var(--bg-tertiary);
+}
+.advanced-fields[open] summary {
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+.advanced-fields .editor-row {
+  margin-top: 8px;
+}
 .editor-row .small-label {
   display: block;
   margin-bottom: 4px;
