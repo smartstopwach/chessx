@@ -249,6 +249,21 @@ body.title-hidden .lesson-header { display: none; }
 .layout[data-layout="focus"] .board-area { grid-column: 1; }
 .layout[data-layout="focus"] .sidebar-right { grid-column: 2; }
 
+/* PUZZLE MODE: Show BOTH sidebars (left for puzzle setup, right for puzzle editor) */
+body[data-authoring="true"] .layout[data-layout="focus"] {
+  grid-template-columns: 280px 1fr 280px;
+}
+body[data-authoring="true"] .layout[data-layout="focus"] .sidebar-left {
+  display: flex;
+  grid-column: 1;
+}
+body[data-authoring="true"] .layout[data-layout="focus"] .board-area {
+  grid-column: 2;
+}
+body[data-authoring="true"] .layout[data-layout="focus"] .sidebar-right {
+  grid-column: 3;
+}
+
 .layout[data-layout="moves"] { grid-template-columns: 0 1fr 320px; }
 .layout[data-layout="moves"] .sidebar-left { display: none; }
 
@@ -2230,6 +2245,23 @@ body[data-authoring="true"] .btn-authoring-only {
 
 .puzzle-editor-panel:hover {
   border-color: var(--pe-blue) !important;
+}
+
+/* Puzzle-mode-only: hidden unless authoring mode is active */
+.puzzle-mode-only {
+  display: none;
+}
+
+body[data-authoring="true"] .puzzle-mode-only {
+  display: block;
+}
+
+/* When in puzzle mode, HIDE the yellow position setup + yellow FEN panel entirely (replaced by blue puzzle setup) */
+body[data-authoring="true"] #leftSidebar .position-editor,
+body[data-authoring="true"] #leftSidebar .pos-controls,
+body[data-authoring="true"] #yellowPositionSetupPanel,
+body[data-authoring="true"] #yellowFenPanel {
+  display: none !important;
 }
 
 .panel-title-blue {

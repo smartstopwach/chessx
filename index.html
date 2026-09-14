@@ -40,6 +40,37 @@
 
   <!-- LEFT SIDEBAR: Teaching Tools -->
   <aside class="sidebar sidebar-left" id="leftSidebar">
+    <!-- PUZZLE MODE POSITION SETUP (only visible in authoring mode) -->
+    <div class="panel puzzle-mode-only" id="puzzleLeftPanel">
+      <div class="panel-title panel-title-blue">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        Position Setup <span class="editor-subtitle">(puzzle only)</span>
+      </div>
+      <div class="pe-setup-hint" id="peSetupHint">Click a piece → click a square · drag pieces too · right-click to erase</div>
+      <div class="pe-setup-controls">
+        <button class="pe-mini" id="btnPEUndo" title="Undo">↶ Undo</button>
+        <button class="pe-mini" id="btnPERedo" title="Redo">↷ Redo</button>
+        <span class="pe-piece-count" id="pePieceCount">0·0</span>
+        <button class="pe-mini" id="btnPEEmpty" title="Empty board">⌀ Empty</button>
+        <button class="pe-mini" id="btnPEStart" title="Reset to standard">↻ Start</button>
+      </div>
+      <div class="pe-piece-rack" id="pePieceRack">
+        <!-- Filled by JS -->
+      </div>
+      <div class="pe-presets">
+        <button class="pe-preset" data-preset="standard">Standard</button>
+        <button class="pe-preset" data-preset="empty">Empty</button>
+        <button class="pe-preset" data-preset="kings">K vs K</button>
+        <button class="pe-preset" data-preset="endgame_kq">K+Q vs K</button>
+        <button class="pe-preset" data-preset="endgame_krk">K+R vs K</button>
+        <button class="pe-preset" data-preset="castling_test">Castling</button>
+      </div>
+      <button class="pe-btn-capture" id="btnPEUseForPuzzle" title="Use this setup as the puzzle's starting position">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        USE THIS POSITION FOR PUZZLE
+      </button>
+    </div>
+
     <div class="panel">
       <div class="panel-title">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
@@ -87,7 +118,7 @@
       </button>
     </div>
 
-    <div class="panel">
+    <div class="panel" id="yellowPositionSetupPanel">
       <div class="panel-title">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
         Position Setup
@@ -152,7 +183,7 @@
       </div>
     </div>
 
-    <div class="panel">
+    <div class="panel" id="yellowFenPanel">
       <div class="panel-title">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
         FEN
@@ -439,40 +470,6 @@
       <div class="pe-row">
         <label>Title <span class="optional-tag">(optional)</span></label>
         <input type="text" id="puzzleTitle" placeholder="Auto-named if left blank" class="pe-input" />
-      </div>
-
-      <!-- INDEPENDENT POSITION SETUP (always visible, blue themed) -->
-      <div class="pe-setup-section">
-        <div class="pe-setup-header">
-          <span class="pe-setup-title">📐 Position Setup <span class="pe-setup-tag">(puzzle only)</span></span>
-        </div>
-        <div class="pe-setup-hint" id="peSetupHint">Click a piece → click a square · drag pieces too · right-click to erase</div>
-
-        <div class="pe-setup-controls">
-          <button class="pe-mini" id="btnPEUndo" title="Undo">↶ Undo</button>
-          <button class="pe-mini" id="btnPERedo" title="Redo">↷ Redo</button>
-          <span class="pe-piece-count" id="pePieceCount">0·0</span>
-          <button class="pe-mini" id="btnPEEmpty" title="Empty board">⌀ Empty</button>
-          <button class="pe-mini" id="btnPEStart" title="Reset to standard">↻ Start</button>
-        </div>
-
-        <div class="pe-piece-rack" id="pePieceRack">
-          <!-- Filled by JS -->
-        </div>
-
-        <div class="pe-presets">
-          <button class="pe-preset" data-preset="standard">Standard</button>
-          <button class="pe-preset" data-preset="empty">Empty</button>
-          <button class="pe-preset" data-preset="kings">K vs K</button>
-          <button class="pe-preset" data-preset="endgame_kq">K+Q vs K</button>
-          <button class="pe-preset" data-preset="endgame_krk">K+R vs K</button>
-          <button class="pe-preset" data-preset="castling_test">Castling</button>
-        </div>
-
-        <button class="pe-btn-capture" id="btnPEUseForPuzzle" title="Use this setup as the puzzle's starting position">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-          USE THIS POSITION FOR PUZZLE
-        </button>
       </div>
 
       <!-- Starting Position display -->
