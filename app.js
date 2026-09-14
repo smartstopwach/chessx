@@ -384,55 +384,63 @@ function onSquareMouseDown(e) {
   const sq = e.target.closest('.square');
   const sqName = sq.dataset.square;
 
-  // AUTHORING MODE: route clicks to PUZZLE editor's independent setup.
-  // In puzzle mode, the LEFT-CLICK on the BOARD works like normal chess
-  // (click piece → click destination to make a legal move). This makes
-  // setting up custom positions natural — just play the moves that lead
-  // to the desired position. The user can also drop extra pieces from
-  // the BLUE rack if needed.
+  // AUTHORING MODE (puzzle edit):
+  // - Click on rack piece → hold it. Click on board square → place that piece anywhere (rule-free)
+  // - Click on board piece → select it (you can move it anywhere by clicking another square)
+  // - Click on empty square with no held piece → make a legal chess move if possible
+  // - Right-click on board → erase piece
+  // All actions work directly on the main board (state.game).
   if (isAuthoringMode()) {
-    // If holding a piece from rack (or board), place it (rule-free placement)
-    if (puzzleState.heldPiece && !puzzleState.heldPiece.source) {
-      // rack piece — place freely
-      e.stopPropagation();
-      e.preventDefault();
-      pePlacePiece(sqName, puzzleState.heldPiece.piece);
-      return;
-    }
-    // Otherwise treat like a normal chess move (against puzzleState.game)
     e.stopPropagation();
     e.preventDefault();
+
+    // Right-click: erase piece
     if (e.button === 2) {
-      // Right-click: erase (rule-free, but rare since most setup is via moves)
       peErasePiece(sqName);
+      // Also keep puzzleGame in sync
+      if (puzzleGame()) puzzleGame().load(state.game.fen());
       return;
     }
-    if (!puzzleGame()) return;
-    const piece = peGetPieceAt(sqName);
-    if (!puzzleState.selectedSquare) {
-      // First click — pick up a piece on the puzzle board
+
+    // If holding a piece from RACK (source === null or 'rack'), place it freely
+    if (puzzleState.heldPiece && !puzzleState.heldPiece.source) {
+      // Place the rack piece on the main board (rule-free)
+      pePlacePiece(sqName, puzzleState.heldPiece.piece);
+      // Sync puzzleGame with main board
+      if (puzzleGame()) puzzleGame().load(state.game.fen());
+      return;
+    }
+
+    // No held piece: try to make a chess move OR select a piece
+    const piece = getPieceAt(sqName);
+
+    if (!state.selectedSquare) {
+      // First click — select the piece if any
       if (piece) {
-        puzzleState.selectedSquare = sqName;
+        state.selectedSquare = sqName;
       }
-      peUpdateSelectionHighlight();
+      highlightSquares();
       return;
     }
-    if (puzzleState.selectedSquare === sqName) {
+
+    if (state.selectedSquare === sqName) {
       // Clicked same square — deselect
-      puzzleState.selectedSquare = null;
-      peUpdateSelectionHighlight();
+      state.selectedSquare = null;
+      highlightSquares();
       return;
     }
-    // Try to make a legal move on the puzzle board
-    const result = peMakeMove(puzzleState.selectedSquare, sqName);
+
+    // Try to make a legal move on the main board
+    const result = peMakeMove(state.selectedSquare, sqName);
     if (!result) {
-      // Move was illegal — try selecting the new square (if it has a piece)
+      // Move was illegal (king would be in check, or piece can't move there)
+      // Try selecting the new square instead
       if (piece) {
-        puzzleState.selectedSquare = sqName;
+        state.selectedSquare = sqName;
       } else {
-        puzzleState.selectedSquare = null;
+        state.selectedSquare = null;
       }
-      peUpdateSelectionHighlight();
+      highlightSquares();
     }
     return;
   }
@@ -1644,44 +1652,22 @@ function peClearBoard() {
 }
 
 function pePlacePiece(sq, piece) {
-  if (!puzzleGame() || !piece) return;
+  if (!piece) return;
+  // Place a piece RULE-FREE on the main board (state.game).
+  // This works for rack-piece placement (custom setup).
   try {
-    const fen = puzzleGame().fen();
+    const fen = state.game.fen();
     const parts = fen.split(' ');
     const rows = parts[0].split('/');
     const r = 8 - parseInt(sq[1]);
     const c = sq.charCodeAt(0) - 97;
-    const row = rows[r];
     const expanded = [];
-    for (const ch of row) {
+    for (const ch of rows[r]) {
       if (/\d/.test(ch)) {
         for (let i = 0; i < parseInt(ch); i++) expanded.push(null);
       } else {
         expanded.push(ch);
       }
-    }
-    // If piece was picked from board, remove from old position
-    if (puzzleState.heldPiece && puzzleState.heldPiece.source && puzzleState.heldPiece.source !== 'rack') {
-      const oldSq = puzzleState.heldPiece.source;
-      const oldR = 8 - parseInt(oldSq[1]);
-      const oldC = oldSq.charCodeAt(0) - 97;
-      const oldExpanded = [];
-      for (const ch of rows[oldR]) {
-        if (/\d/.test(ch)) {
-          for (let i = 0; i < parseInt(ch); i++) oldExpanded.push(null);
-        } else {
-          oldExpanded.push(ch);
-        }
-      }
-      oldExpanded[oldC] = null;
-      // collapse back
-      let s = ''; let e = 0;
-      for (const cell of oldExpanded) {
-        if (cell === null) e++;
-        else { if (e > 0) { s += e; e = 0; } s += cell; }
-      }
-      if (e > 0) s += e;
-      rows[oldR] = s;
     }
     expanded[c] = piece;
     let s = ''; let e = 0;
@@ -1692,24 +1678,43 @@ function pePlacePiece(sq, piece) {
     if (e > 0) s += e;
     rows[r] = s;
     parts[0] = rows.join('/');
-    puzzleGame().load(parts.join(' '));
+    state.game.load(parts.join(' '));
+    // Sync puzzle editor state
+    if (puzzleGame()) puzzleGame().load(state.game.fen());
     peSetupPushHistory();
-    // Clear held if it was from board
-    if (puzzleState.heldPiece && puzzleState.heldPiece.source && puzzleState.heldPiece.source !== 'rack') {
-      puzzleState.heldPiece = null;
-    }
     peUpdatePieceCount();
     peUpdateHint();
-    $$('.pe-piece-rack .pe-rack-piece').forEach(x => x.classList.toggle('selected', x.dataset.piece === puzzleState.heldPiece?.piece));
+    state.history = [];
+    state.historyIndex = -1;
+    renderAll();
   } catch (e) {
     toast('Cannot place piece', 'error');
   }
 }
 
-function peErasePiece(sq) {
-  if (!puzzleGame()) return;
+// Make a legal chess move on the main board (used in puzzle authoring mode).
+// Returns true if move was made, false if illegal.
+function peMakeMove(from, to) {
   try {
-    const fen = puzzleGame().fen();
+    const result = state.game.move({ from, to, promotion: 'q' });
+    if (result) {
+      state.selectedSquare = null;
+      state.history = [];
+      state.historyIndex = -1;
+      // Sync puzzle editor state
+      if (puzzleGame()) puzzleGame().load(state.game.fen());
+      peSetupPushHistory();
+      peUpdatePieceCount();
+      renderAll();
+      return true;
+    }
+  } catch (e) {}
+  return false;
+}
+
+function peErasePiece(sq) {
+  try {
+    const fen = state.game.fen();
     const parts = fen.split(' ');
     const rows = parts[0].split('/');
     const r = 8 - parseInt(sq[1]);
@@ -1731,9 +1736,13 @@ function peErasePiece(sq) {
     if (e > 0) s += e;
     rows[r] = s;
     parts[0] = rows.join('/');
-    puzzleGame().load(parts.join(' '));
+    state.game.load(parts.join(' '));
+    if (puzzleGame()) puzzleGame().load(state.game.fen());
     peSetupPushHistory();
     peUpdatePieceCount();
+    state.history = [];
+    state.historyIndex = -1;
+    renderAll();
   } catch (e) {
     toast('Cannot erase', 'error');
   }
@@ -1742,6 +1751,9 @@ function peErasePiece(sq) {
 function peSelectRackPiece(p) {
   // Rack pieces are held with no source — they go via pePlacePiece (rule-free)
   puzzleState.heldPiece = { piece: p, source: null };
+  // Clear any main board selection so rack piece takes priority
+  state.selectedSquare = null;
+  highlightSquares();
   $$('.pe-piece-rack .pe-rack-piece').forEach(x => x.classList.toggle('selected', x.dataset.piece === p));
   peUpdateHint();
   toast(`Holding ${p.toUpperCase() === p ? 'White ' : 'Black '}${p.toLowerCase() === 'k' ? 'King' : p.toLowerCase() === 'q' ? 'Queen' : p.toLowerCase() === 'r' ? 'Rook' : p.toLowerCase() === 'b' ? 'Bishop' : p.toLowerCase() === 'n' ? 'Knight' : 'Pawn'} — click any square to place`, 'success');
