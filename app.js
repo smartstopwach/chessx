@@ -1653,9 +1653,30 @@ function peClearBoard() {
 
 function pePlacePiece(sq, piece) {
   if (!piece) return;
-  // Place a piece RULE-FREE on the main board (state.game).
-  // This works for rack-piece placement (custom setup).
+  // Place a piece on the main board (state.game), with chess-rule validation:
+  // - Cannot place on a same-color piece (would be illegal)
+  // - Cannot create a second king of the same color (only one king per side)
   try {
+    // Rule 1: check if target square has same-color piece
+    const targetPiece = getPieceAt(sq);
+    if (targetPiece) {
+      // targetPiece is like 'K' (white) or 'k' (black); piece is same format
+      const targetColor = targetPiece === targetPiece.toUpperCase() ? 'w' : 'b';
+      const pieceColor = piece === piece.toUpperCase() ? 'w' : 'b';
+      if (targetColor === pieceColor) {
+        toast('Cannot place on own piece — right-click to erase first', 'error');
+        return;
+      }
+    }
+    // Rule 2: check if we're placing a king when one already exists of that color
+    if (piece === 'K' || piece === 'k') {
+      const kingKey = piece; // K for white, k for black
+      const fen = state.game.fen().split(' ')[0];
+      if (fen.includes(kingKey)) {
+        toast('Cannot add a second ' + (piece === 'K' ? 'white' : 'black') + ' king', 'error');
+        return;
+      }
+    }
     const fen = state.game.fen();
     const parts = fen.split(' ');
     const rows = parts[0].split('/');
