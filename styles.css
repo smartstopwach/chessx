@@ -2256,6 +2256,45 @@ body[data-authoring="true"] .puzzle-mode-only {
   display: block;
 }
 
+/* Setup mode: HIDE the blue puzzle panel, SHOW the yellow position setup */
+body[data-mode="setup"] .puzzle-mode-only {
+  display: none !important;
+}
+body[data-mode="setup"] #yellowPositionSetupPanel,
+body[data-authoring="true"][data-mode="setup"] #yellowPositionSetupPanel {
+  display: block !important;
+}
+body[data-mode="setup"] #yellowFenPanel,
+body[data-authoring="true"][data-mode="setup"] #yellowFenPanel {
+  display: block !important;
+}
+body[data-mode="setup"] #leftSidebar .position-editor,
+body[data-mode="setup"] #leftSidebar .pos-controls,
+body[data-authoring="true"][data-mode="setup"] #leftSidebar .position-editor,
+body[data-authoring="true"][data-mode="setup"] #leftSidebar .pos-controls {
+  display: block !important;
+}
+body[data-mode="setup"] #drawingToolsPanel,
+body[data-mode="setup"] #themesPanel {
+  display: none !important;
+}
+/* Force left sidebar visible in setup mode with 3-column layout */
+body[data-mode="setup"] #leftSidebar {
+  display: flex !important;
+}
+body[data-mode="setup"] .layout[data-layout="focus"] {
+  grid-template-columns: 280px 1fr 280px !important;
+}
+body[data-mode="setup"] .layout[data-layout="focus"] .sidebar-left {
+  grid-column: 1 !important;
+}
+body[data-mode="setup"] .layout[data-layout="focus"] .board-area {
+  grid-column: 2 !important;
+}
+body[data-mode="setup"] .layout[data-layout="focus"] .sidebar-right {
+  grid-column: 3 !important;
+}
+
 /* When in puzzle mode, HIDE all panels that have no purpose in puzzle editing
    (Drawing Tools, Themes, yellow Position Setup + yellow FEN — replaced by blue puzzle setup) */
 body[data-authoring="true"] #leftSidebar .position-editor,
@@ -2715,4 +2754,198 @@ body[data-authoring="true"] #themesPanel {
 
 .pe-advanced .pe-row {
   margin-top: 8px;
+}
+
+/* ============================================
+   HOME BUTTON + MODE INDICATOR (topbar)
+   ============================================ */
+.btn-home {
+  padding: 6px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.btn-home svg {
+  display: block;
+}
+.mode-indicator {
+  margin-left: 12px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+body[data-mode="puzzle"] .mode-indicator {
+  background: var(--pe-blue-bg);
+  color: var(--pe-blue);
+  border-color: var(--pe-blue-border);
+}
+body[data-mode="setup"] .mode-indicator {
+  background: rgba(234, 179, 8, 0.12);
+  color: #eab308;
+  border-color: rgba(234, 179, 8, 0.4);
+}
+
+/* ============================================
+   FRONT PAGE / MODE PICKER
+   ============================================ */
+.front-page {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(135deg, #0f1419 0%, #1a1f2e 100%);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  overflow-y: auto;
+  animation: fadeIn 0.3s ease;
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.front-page.hidden {
+  display: none;
+}
+.front-page-inner {
+  max-width: 1100px;
+  width: 100%;
+  text-align: center;
+}
+.front-page-logo {
+  margin-bottom: 50px;
+}
+.front-page-logo svg {
+  filter: drop-shadow(0 0 30px rgba(232, 197, 71, 0.4));
+  margin-bottom: 16px;
+}
+.front-page-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 64px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 1px;
+  margin: 0;
+}
+.front-page-title span {
+  color: var(--accent);
+}
+.front-page-tagline {
+  color: var(--text-secondary);
+  font-size: 16px;
+  margin: 8px 0 0 0;
+  letter-spacing: 0.5px;
+}
+
+.mode-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin-bottom: 40px;
+}
+.mode-card {
+  background: var(--bg-secondary);
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  padding: 36px 28px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  position: relative;
+  color: var(--text-primary);
+  font-family: inherit;
+}
+.mode-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--accent);
+  box-shadow: 0 8px 32px rgba(232, 197, 71, 0.2);
+}
+.mode-card:active {
+  transform: translateY(-1px);
+}
+.mode-card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 80px;
+  border-radius: 12px;
+  background: var(--bg-tertiary);
+  color: var(--accent);
+}
+.mode-card-puzzle .mode-card-icon {
+  background: var(--pe-blue-bg);
+  color: var(--pe-blue);
+}
+.mode-card-setup .mode-card-icon {
+  background: rgba(234, 179, 8, 0.12);
+  color: #eab308;
+}
+.mode-card-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0;
+  color: var(--text-primary);
+}
+.mode-card-desc {
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0;
+  flex: 1;
+}
+.mode-card-hotkey {
+  display: inline-block;
+  align-self: flex-start;
+  background: var(--bg-tertiary);
+  color: var(--text-tertiary);
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  border: 1px solid var(--border);
+}
+.mode-card-puzzle .mode-card-hotkey {
+  background: var(--pe-blue-bg);
+  color: var(--pe-blue);
+  border-color: var(--pe-blue-border);
+}
+.mode-card-setup .mode-card-hotkey {
+  background: rgba(234, 179, 8, 0.12);
+  color: #eab308;
+  border-color: rgba(234, 179, 8, 0.4);
+}
+
+.front-page-footer {
+  color: var(--text-tertiary);
+  font-size: 13px;
+  margin-top: 20px;
+}
+.front-page-footer p {
+  margin: 0;
+}
+
+/* When on front page, hide the layout content but keep topbar */
+body.on-front-page .layout {
+  visibility: hidden;
+}
+body.on-front-page .topbar .topbar-actions {
+  visibility: hidden;
+}
+
+/* Responsive: 1 column on small screens */
+@media (max-width: 900px) {
+  .mode-cards { grid-template-columns: 1fr; }
+  .front-page-title { font-size: 44px; }
 }

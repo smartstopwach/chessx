@@ -16,6 +16,9 @@
 <!-- ================= TOP BAR ================= -->
 <header class="topbar" id="topbar">
   <div class="brand">
+    <button class="btn-ghost btn-home" id="btnHome" title="Home / Mode Picker (H)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l9-9 9 9M5 10v10h14V10"/></svg>
+    </button>
     <svg class="brand-icon" viewBox="0 0 32 32" width="28" height="28">
       <path d="M16 2 L9 9 L16 16 L23 9 Z" fill="#e8c547"/>
       <circle cx="16" cy="22" r="6" fill="#e8c547"/>
@@ -23,6 +26,7 @@
     </svg>
     <span class="brand-name">Chess<span>X</span></span>
     <span class="brand-tag">Teaching Studio</span>
+    <span class="mode-indicator" id="modeIndicator"></span>
   </div>
 
   <nav class="topbar-actions">
@@ -34,6 +38,65 @@
     <button class="btn-ghost" id="btnFullscreen" title="Fullscreen"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8V3h5M21 8V3h-5M3 16v5h5M21 16v5h-5"/></svg><span>Full</span></button>
   </nav>
 </header>
+
+<!-- ================= FRONT PAGE / MODE PICKER ================= -->
+<div class="front-page" id="frontPage">
+  <div class="front-page-inner">
+    <div class="front-page-logo">
+      <svg viewBox="0 0 64 64" width="80" height="80">
+        <path d="M32 4 L18 18 L32 32 L46 18 Z" fill="#e8c547"/>
+        <circle cx="32" cy="44" r="12" fill="#e8c547"/>
+        <rect x="20" y="52" width="24" height="8" rx="2" fill="#e8c547"/>
+      </svg>
+      <h1 class="front-page-title">Chess<span>X</span></h1>
+      <p class="front-page-tagline">Professional Chess Teaching Studio</p>
+    </div>
+
+    <div class="mode-cards">
+      <button class="mode-card mode-card-normal" id="modeCardNormal" data-mode="normal">
+        <div class="mode-card-icon">
+          <svg viewBox="0 0 64 64" width="56" height="56" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="8" y="8" width="48" height="48" rx="3"/>
+            <path d="M8 24h48M8 40h48M24 8v48M40 8v48"/>
+          </svg>
+        </div>
+        <h2 class="mode-card-title">Normal</h2>
+        <p class="mode-card-desc">Play chess with full teaching tools — engine analysis, move list, clock, drawing tools</p>
+        <span class="mode-card-hotkey">Press 1</span>
+      </button>
+
+      <button class="mode-card mode-card-puzzle" id="modeCardPuzzle" data-mode="puzzle">
+        <div class="mode-card-icon">
+          <svg viewBox="0 0 64 64" width="56" height="56" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M11 8h32a4 4 0 0 1 4 4v32a4 4 0 0 1-4 4H15a4 4 0 0 1-4-4V8z"/>
+            <path d="M19 8v8M35 8v8M19 32h16M19 40h12"/>
+          </svg>
+        </div>
+        <h2 class="mode-card-title">Puzzle</h2>
+        <p class="mode-card-desc">Create chess puzzles with blue Position Setup, save to library, organize chapters</p>
+        <span class="mode-card-hotkey">Press 2</span>
+      </button>
+
+      <button class="mode-card mode-card-setup" id="modeCardSetup" data-mode="setup">
+        <div class="mode-card-icon">
+          <svg viewBox="0 0 64 64" width="56" height="56" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="8" y="8" width="20" height="20" rx="2"/>
+            <rect x="36" y="8" width="20" height="20" rx="2"/>
+            <rect x="8" y="36" width="20" height="20" rx="2"/>
+            <rect x="36" y="36" width="20" height="20" rx="2"/>
+          </svg>
+        </div>
+        <h2 class="mode-card-title">Custom Setup</h2>
+        <p class="mode-card-desc">Quick position setup with yellow rack — play out a position and save to library</p>
+        <span class="mode-card-hotkey">Press 3</span>
+      </button>
+    </div>
+
+    <div class="front-page-footer">
+      <p>Tip: Use number keys 1 / 2 / 3 to quickly switch modes. Click the home icon to come back here.</p>
+    </div>
+  </div>
+</div>
 
 <!-- ================= MAIN LAYOUT ================= -->
 <main class="layout" id="layout" data-layout="focus">

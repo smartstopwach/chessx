@@ -2315,6 +2315,22 @@ document.addEventListener('keydown', (e) => {
   if (e.target.matches('input, textarea, select')) return;
 
   switch (e.key) {
+    case '1':
+      e.preventDefault();
+      setMode('normal');
+      break;
+    case '2':
+      e.preventDefault();
+      setMode('puzzle');
+      break;
+    case '3':
+      e.preventDefault();
+      setMode('setup');
+      break;
+    case 'h': case 'H':
+      e.preventDefault();
+      showFrontPage();
+      break;
     case 'p': case 'P':
       // Toggle authoring mode
       if (isAuthoringMode()) exitAuthoringMode();
@@ -2436,6 +2452,18 @@ function bindEvents() {
     setTimeout(autoFitBoard, 50);
   });
 
+  // Home / mode picker button
+  $('btnHome').addEventListener('click', showFrontPage);
+  // Mode card clicks on front page
+  $$('.mode-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const mode = card.dataset.mode;
+      if (mode === 'normal') setMode('normal');
+      else if (mode === 'puzzle') setMode('puzzle');
+      else if (mode === 'setup') setMode('setup');
+    });
+  });
+
   $('btnHideEngine').addEventListener('click', hideEngine);
   $('engineDepth').addEventListener('change', (e) => setEngineDepth(e.target.value));
   $('engineMultiPV').addEventListener('change', (e) => setEngineMultiPV(e.target.value));
@@ -2508,6 +2536,95 @@ function bindEvents() {
       toast(`Dropped ${pieceName(piece)} on ${sqName}`);
     }
   });
+}
+
+// ============================================
+// MODE PICKER / FRONT PAGE
+// ============================================
+// Three modes: 'front' (mode picker shown), 'normal', 'puzzle', 'setup'
+let currentMode = 'front';
+
+function setMode(mode) {
+  if (mode === currentMode && mode !== 'front') return;
+  currentMode = mode;
+
+  // Hide front page
+  const fp = document.getElementById('frontPage');
+  if (mode === 'front') {
+    document.body.classList.add('on-front-page');
+    if (fp) fp.classList.remove('hidden');
+    const ind = document.getElementById('modeIndicator');
+    if (ind) ind.textContent = '';
+    return;
+  }
+  document.body.classList.remove('on-front-page');
+  if (fp) fp.classList.add('hidden');
+
+  // Update body data-mode
+  document.body.dataset.mode = mode;
+
+  // Update indicator
+  const ind = document.getElementById('modeIndicator');
+  if (ind) {
+    if (mode === 'normal') ind.textContent = 'Normal';
+    else if (mode === 'puzzle') ind.textContent = 'Puzzle';
+    else if (mode === 'setup') ind.textContent = 'Setup';
+  }
+
+  // Exit any current authoring/puzzle mode first
+  if (isAuthoringMode && isAuthoringMode()) {
+    setAuthoringMode(false);
+  }
+
+  // Reset state for clean mode entry
+  state.selectedSquare = null;
+  puzzleState.selectedSquare = null;
+  puzzleState.heldPiece = null;
+  $$('.pe-rack-piece').forEach(x => x.classList.remove('selected'));
+  state.heldPiece = null;
+  state.selectedRackPiece = null;
+  $$('.rack-piece').forEach(x => x.classList.remove('selected'));
+  state.game.reset();
+  state.history = [];
+  state.historyIndex = -1;
+  if (puzzleGame()) {
+    puzzleGame().load('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1');
+    puzzleState.history = [];
+    puzzleState.historyIndex = -1;
+    peSetupPushHistory();
+    peUpdatePieceCount();
+    peUpdateHint();
+  }
+  clearAllAnnotations();
+
+  if (mode === 'normal') {
+    // Normal mode: clean board, no authoring, no puzzle editor showing
+    document.body.dataset.authoring = 'false';
+    // Force left sidebar hidden (focus mode default)
+    const layout = document.getElementById('layout');
+    if (layout) layout.classList.remove('left-sidebar-visible');
+    setTimeout(autoFitBoard, 50);
+    toast('Normal mode — play chess with full tools', 'success');
+  } else if (mode === 'puzzle') {
+    // Puzzle mode: enter authoring, show puzzle editor + blue position setup
+    document.body.dataset.authoring = 'true';
+    enterAuthoringForNewPuzzle();
+    setTimeout(autoFitBoard, 50);
+  } else if (mode === 'setup') {
+    // Custom setup mode: show yellow position setup on left, allow save
+    document.body.dataset.authoring = 'true';
+    enterAuthoringForNewPuzzle();
+    // In setup mode, make sure the LEFT sidebar (yellow) shows instead of blue puzzle one
+    // We'll do this by body data attribute
+    document.body.dataset.mode = 'setup';
+    setTimeout(autoFitBoard, 50);
+    toast('Custom Setup mode — yellow rack on left, play out a position', 'success');
+  }
+  renderAll();
+}
+
+function showFrontPage() {
+  setMode('front');
 }
 
 // ============================================
@@ -2603,6 +2720,9 @@ function doInit() {
   setTimeout(() => safeCall('initEngine', initEngine), 50);
 
   safeCall('updateClocks', updateClocks);
+
+  // Show front page on first load
+  showFrontPage();
 
   console.log('ChessX initialized successfully');
 }
