@@ -414,82 +414,105 @@
       <input type="file" id="libraryFileInput" accept=".json" style="display:none" />
     </div>
 
-    <!-- Puzzle Editor (current puzzle being authored) -->
-    <div class="panel" id="puzzleEditorPanel">
-      <div class="panel-title">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+    <!-- PUZZLE EDITOR (blue accent - distinct from left Position Setup) -->
+    <div class="panel puzzle-editor-panel" id="puzzleEditorPanel">
+      <div class="panel-title panel-title-blue">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
         Puzzle Editor
-        <button class="btn-icon-mini" id="btnToggleAuthoring" title="Enter Authoring Mode (P)">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v6M12 16v6M2 12h6M16 12h6"/><circle cx="12" cy="12" r="3"/></svg>
+        <span class="editor-subtitle">separate from Position Setup</span>
+      </div>
+
+      <!-- Quick action row at top -->
+      <div class="pe-quick-actions">
+        <button class="pe-action pe-action-primary" id="btnQuickPuzzle" title="Create new puzzle">
+          <span class="pe-action-icon">+</span> New Puzzle
+        </button>
+        <button class="pe-action" id="btnQuickChapter" title="Create new chapter">
+          <span class="pe-action-icon">+</span> Chapter
+        </button>
+        <button class="pe-action" id="btnQuickTest" title="Test puzzle as student">
+          <span class="pe-action-icon">▶</span> Test
         </button>
       </div>
-      <div class="quick-actions">
-        <button id="btnQuickChapter">+ Chapter</button>
-        <button id="btnQuickPuzzle">+ Puzzle</button>
-        <button id="btnQuickTest">▶ Test</button>
-      </div>
-      <div class="editor-row">
+
+      <!-- Title field -->
+      <div class="pe-row">
         <label>Title <span class="optional-tag">(optional)</span></label>
-        <input type="text" id="puzzleTitle" placeholder="Auto-named if left blank" />
+        <input type="text" id="puzzleTitle" placeholder="Auto-named if left blank" class="pe-input" />
       </div>
-      <div class="editor-row fen-row">
-        <label>Starting Position</label>
-        <div class="fen-display" id="puzzleFenDisplay">No position set</div>
-        <div class="fen-actions">
-          <button class="btn-mini" id="btnCapturePosition" title="Capture current board position">📸 Capture</button>
-          <button class="btn-mini" id="btnLoadPosition" title="Load this FEN to board">⬇ Load</button>
-          <button class="btn-mini" id="btnToggleInlineSetup" title="Show/hide position setup tools">⚙ Setup</button>
+
+      <!-- INDEPENDENT POSITION SETUP (always visible, blue themed) -->
+      <div class="pe-setup-section">
+        <div class="pe-setup-header">
+          <span class="pe-setup-title">📐 Position Setup <span class="pe-setup-tag">(puzzle only)</span></span>
         </div>
-        <textarea id="puzzleFen" rows="2" placeholder="FEN string..." style="display:none"></textarea>
-        <div class="position-setup-body collapsed" id="inlineSetupBody">
-          <div class="setup-hint-mini" id="inlineSetupHint">Pick a piece from the rack or click a preset below</div>
-          <div class="setup-tools-mini">
-            <button class="btn-mini" id="btnInlineSetupUndo" title="Undo setup change">↶ Undo</button>
-            <button class="btn-mini" id="btnInlineSetupRedo" title="Redo setup change">↷ Redo</button>
-            <span class="piece-count-mini" id="inlinePieceCount" title="Pieces on board: white · black">0·0</span>
-            <span class="setup-spacer"></span>
-            <button class="btn-mini" id="btnInlineClearBoard" title="Empty the board">⌀ Empty</button>
-            <button class="btn-mini" id="btnInlineLoadStandard" title="Reset to starting position">↻ Start</button>
-          </div>
-          <div class="piece-rack-mini" id="inlinePieceRack">
-            <!-- Filled by JS — drag pieces or click to select -->
-          </div>
-          <div class="preset-row-mini">
-            <button class="preset-btn-mini" data-preset="standard" title="Standard starting position">Standard</button>
-            <button class="preset-btn-mini" data-preset="empty" title="Empty board">Empty</button>
-            <button class="preset-btn-mini" data-preset="kings" title="Just the two kings">K vs K</button>
-            <button class="preset-btn-mini" data-preset="endgame_kq" title="King + Queen vs King">K+Q vs K</button>
-            <button class="preset-btn-mini" data-preset="endgame_krk" title="King + Rook vs King">K+R vs K</button>
-            <button class="preset-btn-mini" data-preset="castling_test" title="Castling test position">Castling</button>
-          </div>
-          <button class="btn-primary-full btn-capture-mini" id="btnInlineCaptureToPuzzle" title="Use the current board position as this puzzle's starting position">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-            USE THIS POSITION FOR PUZZLE
-          </button>
+        <div class="pe-setup-hint" id="peSetupHint">Click a piece → click a square · drag pieces too · right-click to erase</div>
+
+        <div class="pe-setup-controls">
+          <button class="pe-mini" id="btnPEUndo" title="Undo">↶ Undo</button>
+          <button class="pe-mini" id="btnPERedo" title="Redo">↷ Redo</button>
+          <span class="pe-piece-count" id="pePieceCount">0·0</span>
+          <button class="pe-mini" id="btnPEEmpty" title="Empty board">⌀ Empty</button>
+          <button class="pe-mini" id="btnPEStart" title="Reset to standard">↻ Start</button>
         </div>
+
+        <div class="pe-piece-rack" id="pePieceRack">
+          <!-- Filled by JS -->
+        </div>
+
+        <div class="pe-presets">
+          <button class="pe-preset" data-preset="standard">Standard</button>
+          <button class="pe-preset" data-preset="empty">Empty</button>
+          <button class="pe-preset" data-preset="kings">K vs K</button>
+          <button class="pe-preset" data-preset="endgame_kq">K+Q vs K</button>
+          <button class="pe-preset" data-preset="endgame_krk">K+R vs K</button>
+          <button class="pe-preset" data-preset="castling_test">Castling</button>
+        </div>
+
+        <button class="pe-btn-capture" id="btnPEUseForPuzzle" title="Use this setup as the puzzle's starting position">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          USE THIS POSITION FOR PUZZLE
+        </button>
       </div>
-      <button class="btn-save-puzzle-big" id="btnSavePuzzle">
+
+      <!-- Starting Position display -->
+      <div class="pe-row">
+        <label>Starting Position (FEN)</label>
+        <div class="pe-fen-display" id="puzzleFenDisplay">No position set</div>
+        <div class="pe-fen-actions">
+          <button class="pe-mini" id="btnPECaptureBoard" title="Capture current board as puzzle position">📸 Capture Board</button>
+          <button class="pe-mini" id="btnPELoadToBoard" title="Load puzzle position to board">⬇ Load to Board</button>
+        </div>
+        <textarea id="puzzleFen" rows="1" placeholder="FEN string..." style="display:none"></textarea>
+      </div>
+
+      <!-- BIG PRIMARY SAVE BUTTON -->
+      <button class="pe-btn-save" id="btnSavePuzzle">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-        <span class="save-text">SAVE PUZZLE</span>
+        SAVE PUZZLE
       </button>
-      <div class="puzzle-editor-bottom-row">
-        <button class="btn-mini-secondary" id="btnNewPuzzle">+ New</button>
-        <button class="btn-mini-secondary" id="btnDeletePuzzle" title="Delete this puzzle">🗑 Delete</button>
-        <button class="btn-mini-secondary" id="btnTestPuzzle" title="Try the puzzle from student perspective">▶ Test</button>
+
+      <!-- Bottom row -->
+      <div class="pe-bottom-row">
+        <button class="pe-action-small" id="btnNewPuzzle">+ New</button>
+        <button class="pe-action-small" id="btnDeletePuzzle" title="Delete this puzzle">🗑 Delete</button>
+        <button class="pe-action-small" id="btnTestPuzzle" title="Test as student">▶ Test</button>
       </div>
-      <details class="advanced-fields">
-        <summary>⚙ Advanced (optional)</summary>
-        <div class="editor-row">
+
+      <!-- Advanced fields -->
+      <details class="pe-advanced">
+        <summary>▸ Advanced (optional)</summary>
+        <div class="pe-row">
           <label>Question / Hint for Student</label>
-          <textarea id="puzzleDescription" rows="2" placeholder="What should the player do here?"></textarea>
+          <textarea id="puzzleDescription" rows="2" placeholder="What should the player do here?" class="pe-input"></textarea>
         </div>
-        <div class="editor-row">
+        <div class="pe-row">
           <label>Solution (SAN moves)</label>
-          <input type="text" id="puzzleSolution" placeholder="e.g. Nxe5, Qh5+, Rd1" />
+          <input type="text" id="puzzleSolution" placeholder="e.g. Nxe5, Qh5+, Rd1" class="pe-input" />
         </div>
-        <div class="editor-row">
+        <div class="pe-row">
           <label>Difficulty</label>
-          <select id="puzzleDifficulty">
+          <select id="puzzleDifficulty" class="pe-input">
             <option value="1">★ Beginner</option>
             <option value="2">★★ Easy</option>
             <option value="3" selected>★★★ Medium</option>
@@ -497,13 +520,13 @@
             <option value="5">★★★★★ Expert</option>
           </select>
         </div>
-        <div class="editor-row">
+        <div class="pe-row">
           <label>Tags</label>
-          <input type="text" id="puzzleTags" placeholder="e.g. mate, fork, endgame" />
+          <input type="text" id="puzzleTags" placeholder="e.g. mate, fork, endgame" class="pe-input" />
         </div>
-        <div class="editor-row chapter-select-row">
+        <div class="pe-row">
           <label>Chapter</label>
-          <select id="puzzleChapterSelect">
+          <select id="puzzleChapterSelect" class="pe-input">
             <!-- Filled by JS -->
           </select>
         </div>

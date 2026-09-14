@@ -384,6 +384,29 @@ function onSquareMouseDown(e) {
   const sq = e.target.closest('.square');
   const sqName = sq.dataset.square;
 
+  // AUTHORING MODE: route clicks to PUZZLE editor's independent setup
+  // The puzzle editor has its own Chess instance (puzzleGame) so it
+  // never touches the main board unless user explicitly clicks
+  // "USE THIS POSITION FOR PUZZLE" / "Load to Board" / SAVE.
+  if (isAuthoringMode()) {
+    e.stopPropagation();
+    e.preventDefault();
+    if (e.button === 2) {
+      peErasePiece(sqName);
+      return;
+    }
+    if (puzzleState.heldPiece) {
+      pePlacePiece(sqName, puzzleState.heldPiece.piece);
+      return;
+    }
+    const piece = peGetPieceAt(sqName);
+    if (piece) {
+      pePickFromBoard(sqName);
+      return;
+    }
+    return;
+  }
+
   // Right-click in setup mode = erase piece
   if (e.button === 2 && state.setupMode) {
     erasePieceAt(sqName);
@@ -636,8 +659,6 @@ function updateSetupHint() {
     hint.innerHTML = `Click a piece in rack OR double-click a board piece · drag pieces too`;
     hint.classList.remove('active');
   }
-  // also update inline hint if it's open
-  updateInlineSetupHint();
 }
 
 function pieceName(p) {
@@ -787,8 +808,6 @@ function updatePieceCount() {
   const wCount = counts.P + counts.N + counts.B + counts.R + counts.Q + counts.K;
   const bCount = counts.p + counts.n + counts.b + counts.r + counts.q + counts.k;
   el.innerHTML = `<span class="count-w">${wCount}</span><span class="count-sep">·</span><span class="count-b">${bCount}</span>`;
-  // also update inline piece count
-  updateInlinePieceCount();
 }
 
 // Quick position presets
@@ -1241,8 +1260,13 @@ function saveCurrentPuzzle() {
   const solution = $('puzzleSolution').value.trim();
   const difficulty = parseInt($('puzzleDifficulty').value) || 3;
   const tags = $('puzzleTags').value.trim();
-  // ALWAYS use current board FEN — user expects what they see to be saved
-  let fen = state.game.fen();
+  // Prefer puzzle editor's independent FEN (puzzleState.game), fallback to main board
+  let fen;
+  if (puzzleState.game) {
+    fen = puzzleGame().fen();
+  } else {
+    fen = state.game.fen();
+  }
   $('puzzleFen').value = fen;
   updateFenDisplay(fen);
   const newChapterId = $('puzzleChapterSelect').value;
@@ -1388,53 +1412,228 @@ function testPuzzleAsStudent() {
 
 // ============================================
 // ============================================
-// INLINE POSITION SETUP (inside Puzzle Editor)
+// PUZZLE EDITOR — INDEPENDENT POSITION SETUP
 // ============================================
-// Mirrors the left-sidebar Position Setup but lives inside the puzzle editor.
-// Both racks share state — picking a piece highlights both rack rows.
-function initInlinePieceRack() {
-  const rack = $('inlinePieceRack');
-  if (!rack) return;
-  rack.innerHTML = '';
-  const pieces = ['K', 'Q', 'R', 'B', 'N', 'P', 'k', 'q', 'r', 'b', 'n', 'p'];
-  pieces.forEach(p => {
-    const div = document.createElement('div');
-    div.className = 'rack-piece-mini';
-    div.dataset.piece = p;
-    if (typeof PIECE_SVG !== 'undefined' && PIECE_SVG[p]) {
-      div.innerHTML = PIECE_SVG[p];
-    } else {
-      div.textContent = PIECE_FONT[p];
-      div.style.color = p === p.toUpperCase() ? '#ffffff' : '#1a1a1a';
-    }
-    // Click: select rack piece for placement
-    div.addEventListener('click', (e) => {
-      e.stopPropagation();
-      selectRackPiece(p);
-      // also highlight inline rack
-      $$('.rack-piece-mini').forEach(x => x.classList.toggle('selected', x.dataset.piece === p));
-    });
-    // Drag: drag-and-drop placement
-    div.addEventListener('dragstart', (e) => {
-      state.dragPiece = p;
-      state.setupMode = true;
-      e.dataTransfer.setData('text/plain', p);
-      e.dataTransfer.effectAllowed = 'copy';
-      div.classList.add('dragging');
-      selectRackPiece(p);
-    });
-    div.addEventListener('dragend', () => {
-      div.classList.remove('dragging');
-    });
-    div.setAttribute('draggable', 'true');
-    rack.appendChild(div);
-  });
+// This is its own setup, separate from left-sidebar Position Setup.
+// Uses a SEPARATE Chess instance (puzzleGame) so it doesn't fight with
+// the main board state. User edits puzzle position here without affecting
+// the visible board, until they click "USE THIS POSITION FOR PUZZLE" or SAVE.
+const puzzleState = {
+  game: typeof Chess !== 'undefined' ? new Chess() : null,
+  history: [],
+  historyIndex: -1,
+  heldPiece: null,
+  setupMode: true, // Always in setup mode
+};
+
+function puzzleGame() {
+  if (!puzzleState.game && typeof Chess !== 'undefined') {
+    puzzleState.game = new Chess();
+  }
+  return puzzleState.game;
 }
 
-function updateInlinePieceCount() {
-  const el = $('inlinePieceCount');
-  if (!el) return;
-  const fen = state.game.fen().split(' ')[0];
+function peSetupPushHistory() {
+  if (!puzzleGame()) return;
+  const fen = puzzleGame().fen();
+  puzzleState.history.length = puzzleState.historyIndex + 1;
+  puzzleState.history.push(fen);
+  if (puzzleState.history.length > 50) puzzleState.history.shift();
+  puzzleState.historyIndex = puzzleState.history.length - 1;
+}
+
+function peSetupUndo() {
+  if (!puzzleGame()) return;
+  if (puzzleState.historyIndex <= 0) return;
+  puzzleState.historyIndex--;
+  puzzleGame().load(puzzleState.history[puzzleState.historyIndex]);
+  peUpdatePieceCount();
+  toast('Undid puzzle setup', 'success');
+}
+
+function peSetupRedo() {
+  if (!puzzleGame()) return;
+  if (puzzleState.historyIndex >= puzzleState.history.length - 1) return;
+  puzzleState.historyIndex++;
+  puzzleGame().load(puzzleState.history[puzzleState.historyIndex]);
+  peUpdatePieceCount();
+  toast('Redid puzzle setup', 'success');
+}
+
+function peLoadPreset(name) {
+  if (!puzzleGame()) return;
+  const presets = {
+    standard: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+    empty: '8/8/8/8/8/8/8/8 w - - 0 1',
+    kings: '4k3/8/8/8/8/8/8/4K3 w - - 0 1',
+    endgame_kq: '4k3/8/8/8/8/8/8/3QK3 w - - 0 1',
+    endgame_krk: '4k3/8/8/8/8/8/8/R3K3 w - - 0 1',
+    castling_test: 'r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1',
+  };
+  const fen = presets[name];
+  if (!fen) return;
+  try {
+    puzzleGame().load(fen);
+    puzzleState.history = [];
+    puzzleState.historyIndex = -1;
+    peSetupPushHistory();
+    peUpdatePieceCount();
+    toast(`Loaded preset: ${name.replace(/_/g, ' ')}`, 'success');
+  } catch (e) {
+    toast('Invalid preset', 'error');
+  }
+}
+
+function peClearBoard() {
+  if (!puzzleGame()) return;
+  puzzleGame().load('8/8/8/8/8/8/8/8 w - - 0 1');
+  puzzleState.history = [];
+  puzzleState.historyIndex = -1;
+  peSetupPushHistory();
+  peUpdatePieceCount();
+  toast('Board cleared', 'success');
+}
+
+function pePlacePiece(sq, piece) {
+  if (!puzzleGame() || !piece) return;
+  try {
+    const fen = puzzleGame().fen();
+    const parts = fen.split(' ');
+    const rows = parts[0].split('/');
+    const r = 8 - parseInt(sq[1]);
+    const c = sq.charCodeAt(0) - 97;
+    const row = rows[r];
+    const expanded = [];
+    for (const ch of row) {
+      if (/\d/.test(ch)) {
+        for (let i = 0; i < parseInt(ch); i++) expanded.push(null);
+      } else {
+        expanded.push(ch);
+      }
+    }
+    // If piece was picked from board, remove from old position
+    if (puzzleState.heldPiece && puzzleState.heldPiece.source && puzzleState.heldPiece.source !== 'rack') {
+      const oldSq = puzzleState.heldPiece.source;
+      const oldR = 8 - parseInt(oldSq[1]);
+      const oldC = oldSq.charCodeAt(0) - 97;
+      const oldExpanded = [];
+      for (const ch of rows[oldR]) {
+        if (/\d/.test(ch)) {
+          for (let i = 0; i < parseInt(ch); i++) oldExpanded.push(null);
+        } else {
+          oldExpanded.push(ch);
+        }
+      }
+      oldExpanded[oldC] = null;
+      // collapse back
+      let s = ''; let e = 0;
+      for (const cell of oldExpanded) {
+        if (cell === null) e++;
+        else { if (e > 0) { s += e; e = 0; } s += cell; }
+      }
+      if (e > 0) s += e;
+      rows[oldR] = s;
+    }
+    expanded[c] = piece;
+    let s = ''; let e = 0;
+    for (const cell of expanded) {
+      if (cell === null) e++;
+      else { if (e > 0) { s += e; e = 0; } s += cell; }
+    }
+    if (e > 0) s += e;
+    rows[r] = s;
+    parts[0] = rows.join('/');
+    puzzleGame().load(parts.join(' '));
+    peSetupPushHistory();
+    // Clear held if it was from board
+    if (puzzleState.heldPiece && puzzleState.heldPiece.source && puzzleState.heldPiece.source !== 'rack') {
+      puzzleState.heldPiece = null;
+    }
+    peUpdatePieceCount();
+    peUpdateHint();
+    $$('.pe-piece-rack .pe-rack-piece').forEach(x => x.classList.toggle('selected', x.dataset.piece === puzzleState.heldPiece?.piece));
+  } catch (e) {
+    toast('Cannot place piece', 'error');
+  }
+}
+
+function peErasePiece(sq) {
+  if (!puzzleGame()) return;
+  try {
+    const fen = puzzleGame().fen();
+    const parts = fen.split(' ');
+    const rows = parts[0].split('/');
+    const r = 8 - parseInt(sq[1]);
+    const c = sq.charCodeAt(0) - 97;
+    const expanded = [];
+    for (const ch of rows[r]) {
+      if (/\d/.test(ch)) {
+        for (let i = 0; i < parseInt(ch); i++) expanded.push(null);
+      } else {
+        expanded.push(ch);
+      }
+    }
+    expanded[c] = null;
+    let s = ''; let e = 0;
+    for (const cell of expanded) {
+      if (cell === null) e++;
+      else { if (e > 0) { s += e; e = 0; } s += cell; }
+    }
+    if (e > 0) s += e;
+    rows[r] = s;
+    parts[0] = rows.join('/');
+    puzzleGame().load(parts.join(' '));
+    peSetupPushHistory();
+    peUpdatePieceCount();
+  } catch (e) {
+    toast('Cannot erase', 'error');
+  }
+}
+
+function peSelectRackPiece(p) {
+  puzzleState.heldPiece = { piece: p, source: 'rack' };
+  $$('.pe-piece-rack .pe-rack-piece').forEach(x => x.classList.toggle('selected', x.dataset.piece === p));
+  peUpdateHint();
+  toast(`Holding ${p.toUpperCase() === p ? 'White ' : 'Black '}${p.toLowerCase() === 'k' ? 'King' : p.toLowerCase() === 'q' ? 'Queen' : p.toLowerCase() === 'r' ? 'Rook' : p.toLowerCase() === 'b' ? 'Bishop' : p.toLowerCase() === 'n' ? 'Knight' : 'Pawn'} — click board square to place`, 'success');
+}
+
+function pePickFromBoard(sq) {
+  if (!puzzleGame()) return false;
+  const board = puzzleGame().board();
+  const r = 8 - parseInt(sq[1]);
+  const c = sq.charCodeAt(0) - 97;
+  const piece = board[r][c];
+  if (!piece) {
+    // Empty — if holding, place
+    if (puzzleState.heldPiece) {
+      pePlacePiece(sq, puzzleState.heldPiece.piece);
+      return true;
+    }
+    return false;
+  }
+  // Convert to single char: 'wK' -> 'K', 'bP' -> 'p'
+  const key = piece.color === 'w' ? piece.type.toUpperCase() : piece.type.toLowerCase();
+  puzzleState.heldPiece = { piece: key, source: sq };
+  $$('.pe-piece-rack .pe-rack-piece').forEach(x => x.classList.toggle('selected', x.dataset.piece === key));
+  peUpdateHint();
+  toast(`Picked ${key} from ${sq}`, 'success');
+  return true;
+}
+
+function peGetPieceAt(sq) {
+  if (!puzzleGame()) return null;
+  const board = puzzleGame().board();
+  const r = 8 - parseInt(sq[1]);
+  const c = sq.charCodeAt(0) - 97;
+  const piece = board[r][c];
+  if (!piece) return null;
+  return piece.color === 'w' ? piece.type.toUpperCase() : piece.type.toLowerCase();
+}
+
+function peUpdatePieceCount() {
+  const el = $('pePieceCount');
+  if (!el || !puzzleGame()) return;
+  const fen = puzzleGame().fen().split(' ')[0];
   const counts = { K:0, Q:0, R:0, B:0, N:0, P:0, k:0, q:0, r:0, b:0, n:0, p:0 };
   for (const ch of fen) {
     if (counts[ch] !== undefined) counts[ch]++;
@@ -1444,48 +1643,127 @@ function updateInlinePieceCount() {
   el.innerHTML = `<span class="count-w">${wCount}</span><span class="count-sep">·</span><span class="count-b">${bCount}</span>`;
 }
 
-function updateInlineSetupHint() {
-  const hint = $('inlineSetupHint');
+function peUpdateHint() {
+  const hint = $('peSetupHint');
   if (!hint) return;
-  if (state.heldPiece) {
-    hint.innerHTML = `<span class="hint-active">Holding: <strong>${pieceName(state.heldPiece.piece)}</strong></span> · click square to place · right-click to erase`;
+  if (puzzleState.heldPiece) {
+    const p = puzzleState.heldPiece.piece;
+    const name = p.toUpperCase() === p ? `White ${p === 'K' ? 'King' : p === 'Q' ? 'Queen' : p === 'R' ? 'Rook' : p === 'B' ? 'Bishop' : p === 'N' ? 'Knight' : 'Pawn'}` : `Black ${p.toLowerCase() === 'k' ? 'King' : p.toLowerCase() === 'q' ? 'Queen' : p.toLowerCase() === 'r' ? 'Rook' : p.toLowerCase() === 'b' ? 'Bishop' : p.toLowerCase() === 'n' ? 'Knight' : 'Pawn'}`;
+    hint.innerHTML = `<span class="hint-active">Holding: <strong>${name}</strong></span> · click a board square to place · right-click to erase`;
     hint.classList.add('active');
   } else {
-    hint.textContent = 'Pick a piece from the rack or click a preset below';
+    hint.textContent = 'Click a piece from the rack below → click a board square to place · drag pieces too · right-click to erase';
     hint.classList.remove('active');
   }
 }
 
-function toggleInlineSetup() {
-  const body = $('inlineSetupBody');
-  const btn = $('btnToggleInlineSetup');
-  if (!body || !btn) return;
-  const collapsed = body.classList.toggle('collapsed');
-  btn.classList.toggle('active', !collapsed);
-  if (!collapsed) {
-    // Auto-enable setup mode when opened
-    state.setupMode = true;
-    updateSetupHint();
-    updateInlineSetupHint();
+function initPEPieceRack() {
+  const rack = $('pePieceRack');
+  if (!rack) return;
+  rack.innerHTML = '';
+  const pieces = ['K', 'Q', 'R', 'B', 'N', 'P', 'k', 'q', 'r', 'b', 'n', 'p'];
+  pieces.forEach(p => {
+    const div = document.createElement('div');
+    div.className = 'pe-rack-piece';
+    div.dataset.piece = p;
+    if (typeof PIECE_SVG !== 'undefined' && PIECE_SVG[p]) {
+      div.innerHTML = PIECE_SVG[p];
+    } else {
+      div.textContent = PIECE_FONT[p];
+      div.style.color = p === p.toUpperCase() ? '#ffffff' : '#1a1a1a';
+    }
+    div.addEventListener('click', (e) => {
+      e.stopPropagation();
+      peSelectRackPiece(p);
+    });
+    div.setAttribute('draggable', 'true');
+    div.addEventListener('dragstart', (e) => {
+      e.dataTransfer.setData('text/plain', p);
+      e.dataTransfer.effectAllowed = 'copy';
+      peSelectRackPiece(p);
+    });
+    div.addEventListener('dragend', () => {});
+    rack.appendChild(div);
+  });
+}
+
+function peUseForPuzzle() {
+  if (!puzzleGame()) return;
+  const fen = puzzleGame().fen();
+  $('puzzleFen').value = fen;
+  updateFenDisplay(fen);
+  toast('Position captured for puzzle ✓', 'success');
+}
+
+function peLoadToBoard() {
+  if (!puzzleGame()) return;
+  // Load the puzzle's setup into the main game board for visual preview
+  try {
+    const fen = puzzleGame().fen();
+    state.game.load(fen);
+    state.history = [];
+    state.historyIndex = -1;
+    renderAll();
+    toast('Position loaded to main board', 'success');
+  } catch (e) {
+    toast('Cannot load', 'error');
   }
 }
 
-function inlineCaptureToPuzzle() {
-  captureCurrentPosition();
-  // Toast extra context
-  toast('Puzzle FEN updated from board position', 'success');
+function peCaptureFromBoard() {
+  // Capture current main board position INTO the puzzle editor
+  if (!puzzleGame()) return;
+  try {
+    const fen = state.game.fen();
+    puzzleGame().load(fen);
+    puzzleState.history = [];
+    puzzleState.historyIndex = -1;
+    peSetupPushHistory();
+    peUpdatePieceCount();
+    toast('Captured board position into puzzle editor', 'success');
+  } catch (e) {
+    toast('Cannot capture', 'error');
+  }
 }
 
-// Wrapper for inline undo/redo that also updates inline count + hint
-function inlineSetupUndo() {
-  setupUndo();
-  updateInlinePieceCount();
-  updateInlineSetupHint();
+function resetPuzzleSetupToStandard() {
+  if (!puzzleGame()) return;
+  peLoadPreset('standard');
 }
-function inlineSetupRedo() {
-  setupRedo();
-  updateInlinePieceCount();
-  updateInlineSetupHint();
+
+function peOnBoardMouseDown(e) {
+  if (!e.target.closest('.square')) return;
+  const sq = e.target.closest('.square').dataset.square;
+  // The puzzle editor only modifies its OWN setup when active
+  // But we need a way to know user is editing puzzle vs main board.
+  // Solution: when puzzle editor is "active" (user is authoring a puzzle),
+  // clicks on the board go to the PUZZLE editor setup instead of the main game.
+  if (!isAuthoringMode()) return;
+  e.stopImmediatePropagation();
+  e.preventDefault();
+  if (e.button === 2) {
+    peErasePiece(sq);
+    return;
+  }
+  // If holding a piece, place it
+  if (puzzleState.heldPiece) {
+    pePlacePiece(sq, puzzleState.heldPiece.piece);
+    return;
+  }
+  // Single-click on a piece = pick it up
+  const piece = peGetPieceAt(sq);
+  if (piece) {
+    pePickFromBoard(sq);
+    return;
+  }
+}
+
+function peOnBoardContextMenu(e) {
+  if (!isAuthoringMode()) return;
+  e.preventDefault();
+  if (e.target.closest('.square')) {
+    peErasePiece(e.target.closest('.square').dataset.square);
+  }
 }
 
 // AUTHORING MODE — distinct visual state when making puzzles
@@ -2026,7 +2304,7 @@ function doInit() {
 
   // Then do the rest independently
   safeCall('initPieceRack', initPieceRack);
-  safeCall('initInlinePieceRack', initInlinePieceRack);
+  safeCall('initPEPieceRack', initPEPieceRack);
   renderLibrary();
   renderChapterSelect();
   loadPuzzleToEditor(null);
@@ -2049,46 +2327,36 @@ function doInit() {
   });
   $('btnSavePuzzle').addEventListener('click', saveCurrentPuzzle);
   $('btnNewPuzzle').addEventListener('click', newPuzzle);
-  $('btnToggleAuthoring').addEventListener('click', () => {
-    if (isAuthoringMode()) exitAuthoringMode();
-    else enterAuthoringForNewPuzzle();
-  });
   $('btnQuickChapter').addEventListener('click', () => $('btnNewChapter').click());
   $('btnQuickPuzzle').addEventListener('click', enterAuthoringForNewPuzzle);
   $('btnQuickTest').addEventListener('click', testPuzzleAsStudent);
 
   // Authoring toolbar buttons
-  $('btnAuthoringCapture').addEventListener('click', captureCurrentPosition);
-  $('btnAuthoringLoad').addEventListener('click', () => loadFENToBoard($('puzzleFen').value.trim()));
+  $('btnAuthoringCapture').addEventListener('click', peCaptureFromBoard);
+  $('btnAuthoringLoad').addEventListener('click', peLoadToBoard);
   $('btnAuthoringSave').addEventListener('click', saveCurrentPuzzle);
   $('btnAuthoringTest').addEventListener('click', testPuzzleAsStudent);
   $('btnAuthoringNew').addEventListener('click', enterAuthoringForNewPuzzle);
   $('btnAuthoringExit').addEventListener('click', exitAuthoringMode);
   $('btnDeletePuzzle').addEventListener('click', deleteCurrentPuzzle);
-  $('btnCapturePosition').addEventListener('click', captureCurrentPosition);
-  $('btnLoadPosition').addEventListener('click', () => loadFENToBoard($('puzzleFen').value.trim()));
+  $('btnPECaptureBoard').addEventListener('click', peCaptureFromBoard);
+  $('btnPELoadToBoard').addEventListener('click', peLoadToBoard);
 
-  // Inline position setup (inside puzzle editor)
-  $('btnToggleInlineSetup').addEventListener('click', toggleInlineSetup);
-  $('btnInlineSetupUndo').addEventListener('click', inlineSetupUndo);
-  $('btnInlineSetupRedo').addEventListener('click', inlineSetupRedo);
-  $('btnInlineClearBoard').addEventListener('click', () => {
-    clearBoard();
-    updateInlinePieceCount();
-    updateInlineSetupHint();
-    toast('Board cleared', 'success');
+  // Puzzle editor position setup (independent state)
+  initPEPieceRack();
+  peSetupPushHistory();
+  peUpdatePieceCount();
+  peUpdateHint();
+
+  $('btnPEUndo').addEventListener('click', peSetupUndo);
+  $('btnPERedo').addEventListener('click', peSetupRedo);
+  $('btnPEEmpty').addEventListener('click', peClearBoard);
+  $('btnPEStart').addEventListener('click', resetPuzzleSetupToStandard);
+  $('btnPEUseForPuzzle').addEventListener('click', peUseForPuzzle);
+  $$('.pe-preset').forEach(btn => {
+    btn.addEventListener('click', () => peLoadPreset(btn.dataset.preset));
   });
-  $('btnInlineLoadStandard').addEventListener('click', () => loadPreset('standard'));
-  $('btnInlineCaptureToPuzzle').addEventListener('click', inlineCaptureToPuzzle);
-  $$('.preset-btn-mini').forEach(btn => {
-    btn.addEventListener('click', () => {
-      loadPreset(btn.dataset.preset);
-      updateInlinePieceCount();
-      updateInlineSetupHint();
-      // auto-capture the preset FEN to the puzzle's FEN field
-      inlineCaptureToPuzzle();
-    });
-  });
+
   $('btnTestPuzzle').addEventListener('click', testPuzzleAsStudent);
   $('btnExportLibrary').addEventListener('click', exportLibrary);
   $('btnImportLibrary').addEventListener('click', () => $('libraryFileInput').click());
