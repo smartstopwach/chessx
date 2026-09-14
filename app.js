@@ -547,7 +547,21 @@ function onSquareMouseUp(e) {
       highlightSquares();
     } else if (state.selectedSquare) {
       // Click on destination with a piece selected = try chess move
-      tryMakeMove(state.selectedSquare, sqName);
+      const moved = tryMakeMove(state.selectedSquare, sqName);
+      if (!moved) {
+        // Move was illegal — standard fallback: select the clicked piece
+        // if it belongs to the side to move, otherwise deselect.
+        // (Before this fix nothing happened here, so the first selected
+        // piece stayed selected forever and no other piece could be clicked.)
+        let clickedPiece = null;
+        try { clickedPiece = state.game.get(sqName); } catch (e) {}
+        if (clickedPiece && clickedPiece.color === state.game.turn()) {
+          state.selectedSquare = sqName;
+        } else {
+          state.selectedSquare = null;
+        }
+        highlightSquares();
+      }
     } else {
       // No piece selected — try to select this piece if it belongs to current player
       try {
