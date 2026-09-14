@@ -1403,6 +1403,29 @@ function saveCurrentPuzzle() {
   renderChapterSelect();
   updateFenDisplay(fen);
   toast('✓ Saved: ' + title, 'success');
+
+  // Visual feedback: flash the SAVE button green
+  const saveBtn = $('btnSavePuzzle');
+  if (saveBtn) {
+    saveBtn.classList.add('save-flash');
+    setTimeout(() => saveBtn.classList.remove('save-flash'), 1500);
+  }
+
+  // Highlight the newly saved puzzle in the library
+  setTimeout(() => {
+    const newPuzEl = document.querySelector('.library-puzzle.active');
+    if (newPuzEl) {
+      newPuzEl.classList.add('puzzle-just-saved');
+      newPuzEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTimeout(() => newPuzEl.classList.remove('puzzle-just-saved'), 2000);
+    }
+    // Also flash the library panel border
+    const libPanel = $('libraryPanel');
+    if (libPanel) {
+      libPanel.classList.add('library-saved-flash');
+      setTimeout(() => libPanel.classList.remove('library-saved-flash'), 1500);
+    }
+  }, 100);
 }
 
 function captureCurrentPosition() {

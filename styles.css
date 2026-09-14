@@ -2621,6 +2621,41 @@ body[data-authoring="true"] #themesPanel {
   transform: translateY(0);
 }
 
+/* Save success animation - flashes green when puzzle saved */
+.pe-btn-save.save-flash {
+  animation: save-flash-anim 1.5s ease-out;
+}
+@keyframes save-flash-anim {
+  0% {
+    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+    box-shadow: 0 0 30px rgba(34, 197, 94, 0.6);
+    transform: scale(1.05);
+  }
+  100% {
+    background: linear-gradient(135deg, var(--pe-blue) 0%, #2a7ed8 100%);
+    box-shadow: 0 2px 12px var(--pe-blue-glow);
+    transform: scale(1);
+  }
+}
+
+/* Library panel border flash when save happens */
+#libraryPanel.library-saved-flash {
+  animation: library-flash-anim 1.5s ease-out;
+}
+@keyframes library-flash-anim {
+  0% { box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.6); }
+  100% { box-shadow: var(--shadow-sm, 0 1px 2px rgba(0,0,0,0.2)); }
+}
+
+/* Highlight newly saved puzzle in library */
+.library-puzzle.puzzle-just-saved {
+  animation: puzzle-saved-anim 2s ease-out;
+}
+@keyframes puzzle-saved-anim {
+  0% { background: rgba(34, 197, 94, 0.4); transform: scale(1.02); }
+  100% { background: transparent; transform: scale(1); }
+}
+
 /* Bottom row of small actions */
 .pe-bottom-row {
   display: flex;
