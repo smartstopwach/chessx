@@ -2256,11 +2256,14 @@ body[data-authoring="true"] .puzzle-mode-only {
   display: block;
 }
 
-/* When in puzzle mode, HIDE the yellow position setup + yellow FEN panel entirely (replaced by blue puzzle setup) */
+/* When in puzzle mode, HIDE all panels that have no purpose in puzzle editing
+   (Drawing Tools, Themes, yellow Position Setup + yellow FEN — replaced by blue puzzle setup) */
 body[data-authoring="true"] #leftSidebar .position-editor,
 body[data-authoring="true"] #leftSidebar .pos-controls,
 body[data-authoring="true"] #yellowPositionSetupPanel,
-body[data-authoring="true"] #yellowFenPanel {
+body[data-authoring="true"] #yellowFenPanel,
+body[data-authoring="true"] #drawingToolsPanel,
+body[data-authoring="true"] #themesPanel {
   display: none !important;
 }
 
