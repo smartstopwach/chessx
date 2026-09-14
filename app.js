@@ -1137,13 +1137,6 @@ function setTheme(theme) {
 // ============================================
 // LAYOUTS
 // ============================================
-function setLayout(layout) {
-  state.layout = layout;
-  els.layout.dataset.layout = layout;
-  $$('.layout-btn').forEach(b => b.classList.toggle('active', b.dataset.layout === layout));
-  setTimeout(() => { renderAnnotations(); autoFitBoard(); }, 50);
-}
-
 // ============================================
 // LIBRARY / CHAPTERS / PUZZLE AUTHORING
 // ============================================
@@ -2059,9 +2052,6 @@ function bindEvents() {
     if (!document.fullscreenElement) document.documentElement.requestFullscreen();
     else document.exitFullscreen();
   });
-
-  $$('.layout-btn').forEach(b => b.addEventListener('click', () => setLayout(b.dataset.layout)));
-
 
   $$('.tool-btn').forEach(b => b.addEventListener('click', () => setTool(b.dataset.tool)));
   $$('.color-dot').forEach(b => b.addEventListener('click', () => {
